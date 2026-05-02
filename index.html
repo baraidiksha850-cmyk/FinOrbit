@@ -1009,9 +1009,9 @@
   }
 
   function doLogin() {
-    const email = document.getElementById('loginEmail').value || 'rahul@gmail.com';
+    const email = document.getElementById('loginEmail').value || '@gmail.com';
     closeModal('login');
-    doEnterDashboard('Rahul Sharma', email);
+    doEnterDashboard('', email);
   }
 
   function doEnterDashboard(name, email) {

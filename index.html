@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinVault — Financial Health Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07080f;
+    --surface: #0e1020;
+    --surface2: #161828;
+    --border: #1f2240;
+    --accent: #6c63ff;
+    --accent2: #00e5b0;
+    --accent3: #ff6b6b;
+    --accent4: #ffc94a;
+    --text: #e8eaf6;
+    --muted: #6b7196;
+    --card: #111326;
+    --green: #00e5b0;
+    --red: #ff6b6b;
+    --yellow: #ffc94a;
+    --purple: #6c63ff;
+    --blue: #4fc3f7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ══════════════════════════════════════
+     LANDING / AUTH SCREENS
+  ══════════════════════════════════════ */
+  #landing {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, #1a1050 0%, var(--bg) 70%);
+    text-align: center;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  #landing::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='none'/%3E%3Ccircle cx='30' cy='30' r='1' fill='%236c63ff22'/%3E%3C/svg%3E") repeat;
+    animation: gridFloat 20s linear infinite;
+  }
+  @keyframes gridFloat { 0%{background-position:0 0} 100%{background-position:60px 60px} }
+
+  .logo-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    padding: 10px 22px; border-radius: 50px;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem;
+    letter-spacing: 2px; margin-bottom: 32px;
+    box-shadow: 0 0 40px #6c63ff44;
+    position: relative; z-index: 1;
+    animation: badgePop .6s ease;
+  }
+  @keyframes badgePop { from{transform:scale(.7);opacity:0} to{transform:scale(1);opacity:1} }
+  .logo-badge span { font-size: 1.6rem; }
+
+  .landing-title {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: clamp(2.2rem, 6vw, 4.5rem); line-height: 1.1;
+    margin-bottom: 16px; position: relative; z-index: 1;
+    animation: fadeUp .7s .2s both ease;
+  }
+  .landing-title .hl { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .landing-sub { font-size: 1.1rem; color: var(--muted); margin-bottom: 40px; max-width: 500px; position: relative; z-index: 1; animation: fadeUp .7s .35s both ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  .auth-btns { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 1; animation: fadeUp .7s .5s both ease; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #9c6fff);
+    color: #fff; border: none; padding: 14px 30px;
+    border-radius: 12px; font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: all .25s; font-family: 'DM Sans', sans-serif;
+    box-shadow: 0 4px 20px #6c63ff55;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #6c63ff77; }
+  .btn-secondary {
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border); padding: 14px 30px;
+    border-radius: 12px; font-size: 1rem; font-weight: 500;
+    cursor: pointer; transition: all .25s; font-family: 'DM Sans', sans-serif;
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+  .feature-pills { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 48px; position: relative; z-index: 1; animation: fadeUp .7s .65s both ease; }
+  .pill { background: var(--surface); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* ── AUTH MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: #000000cc; backdrop-filter: blur(8px);
+    z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 36px; width: 90%; max-width: 440px;
+    position: relative; animation: modalIn .35s ease;
+  }
+  @keyframes modalIn { from{opacity:0;transform:scale(.93) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+  .modal-close {
+    position: absolute; top: 16px; right: 18px;
+    background: none; border: none; color: var(--muted); font-size: 1.4rem;
+    cursor: pointer; transition: color .2s;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal h2 { font-family: 'Syne', sans-serif; font-size: 1.5rem; margin-bottom: 6px; }
+  .modal p.sub { color: var(--muted); font-size: .9rem; margin-bottom: 24px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+  .form-group input, .form-group select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 12px 14px; border-radius: 10px;
+    font-size: .95rem; font-family: 'DM Sans', sans-serif; outline: none;
+    transition: border .2s;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-group select option { background: var(--bg); }
+
+  .social-btn {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 12px; border-radius: 10px; font-size: .95rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all .2s; margin-bottom: 10px; font-family: 'DM Sans', sans-serif;
+  }
+  .social-btn:hover { border-color: var(--accent); background: #1a1a35; }
+  .google-icon { width: 18px; height: 18px; }
+
+  .divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-size: .82rem; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .full-btn {
+    width: 100%; padding: 13px; background: linear-gradient(135deg, var(--accent), #9c6fff);
+    color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s;
+  }
+  .full-btn:hover { opacity: .9; transform: translateY(-1px); }
+  .switch-auth { text-align: center; margin-top: 16px; font-size: .88rem; color: var(--muted); }
+  .switch-auth a { color: var(--accent); cursor: pointer; text-decoration: none; }
+
+  /* bank login */
+  .bank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .bank-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; text-align: center;
+    cursor: pointer; transition: all .2s; font-size: .82rem; color: var(--muted);
+  }
+  .bank-card:hover, .bank-card.selected { border-color: var(--accent); color: var(--accent); background: #1a1a35; }
+  .bank-card .bank-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+
+  /* ══════════════════════════════════════
+     DASHBOARD
+  ══════════════════════════════════════ */
+  #dashboard { flex-direction: row; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px; min-height: 100vh; background: var(--surface);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    padding: 24px 0; position: fixed; top: 0; left: 0; z-index: 100;
+    transition: transform .3s;
+  }
+  .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .sidebar-logo .logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .sidebar-logo .logo-sub { font-size: .73rem; color: var(--muted); margin-top: 2px; }
+
+  .nav-section { padding: 0 12px; margin-bottom: 8px; }
+  .nav-label { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; padding: 0 8px; margin-bottom: 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border-radius: 10px; cursor: pointer; color: var(--muted); font-size: .9rem;
+    font-weight: 500; transition: all .2s; margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: linear-gradient(135deg, #6c63ff22, #00e5b011); color: var(--text); border: 1px solid #6c63ff33; }
+  .nav-item .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+  .nav-item .nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: .68rem; padding: 2px 7px; border-radius: 20px; font-weight: 700; }
+
+  .sidebar-user { margin-top: auto; padding: 16px 20px 0; border-top: 1px solid var(--border); }
+  .user-info { display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .9rem; }
+  .user-name { font-size: .88rem; font-weight: 600; }
+  .user-email { font-size: .73rem; color: var(--muted); }
+  .logout-btn { margin-top: 12px; width: 100%; background: none; border: 1px solid var(--border); color: var(--muted); padding: 8px; border-radius: 8px; cursor: pointer; font-size: .83rem; transition: all .2s; font-family: 'DM Sans', sans-serif; }
+  .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* Main content */
+  .main-content { margin-left: 240px; flex: 1; padding: 28px; min-height: 100vh; }
+
+  /* Topbar */
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .topbar-title h1 { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 700; }
+  .topbar-title p { color: var(--muted); font-size: .88rem; margin-top: 2px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .notif-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; position: relative; transition: all .2s; }
+  .notif-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .notif-dot { position: absolute; top: 8px; right: 8px; width: 7px; height: 7px; background: var(--red); border-radius: 50%; }
+  .period-toggle { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .period-btn { padding: 8px 14px; font-size: .82rem; cursor: pointer; color: var(--muted); border: none; background: none; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+  .period-btn.active { background: var(--accent); color: #fff; }
+
+  /* TAB PANELS */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── OVERVIEW TAB ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px; position: relative; overflow: hidden; transition: transform .2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+  .stat-card::after { content: ''; position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; border-radius: 50%; opacity: .08; }
+  .stat-card.green::after { background: var(--green); }
+  .stat-card.red::after { background: var(--red); }
+  .stat-card.yellow::after { background: var(--yellow); }
+  .stat-card.purple::after { background: var(--purple); }
+  .stat-label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 700; margin-bottom: 6px; }
+  .stat-change { font-size: .78rem; display: flex; align-items: center; gap: 4px; }
+  .stat-change.up { color: var(--green); }
+  .stat-change.down { color: var(--red); }
+  .stat-icon { position: absolute; top: 18px; right: 18px; font-size: 1.3rem; opacity: .5; }
+
+  .mid-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+
+  /* Chart card */
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .card-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; }
+  .card-sub { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+
+  /* SVG Chart */
+  .chart-wrap { position: relative; height: 160px; }
+  .chart-wrap svg { width: 100%; height: 100%; }
+
+  /* Spending Donut */
+  .donut-wrap { display: flex; flex-direction: column; align-items: center; }
+  .donut-svg { width: 130px; height: 130px; }
+  .donut-center { text-align: center; margin-top: 12px; }
+  .donut-center .val { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; }
+  .donut-center .lbl { font-size: .75rem; color: var(--muted); }
+  .legend { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .legend-item { display: flex; align-items: center; justify-content: space-between; font-size: .82rem; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; }
+
+  /* Accounts */
+  .accounts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+  .account-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 18px; transition: all .2s; cursor: pointer;
+  }
+  .account-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .acc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .acc-bank { font-size: .75rem; color: var(--muted); }
+  .acc-type { font-size: .85rem; font-weight: 600; }
+  .acc-badge { font-size: .68rem; padding: 3px 8px; border-radius: 20px; font-weight: 600; }
+  .acc-badge.active { background: #00e5b022; color: var(--green); }
+  .acc-badge.linked { background: #6c63ff22; color: var(--purple); }
+  .acc-num { font-family: 'DM Mono', monospace; font-size: .82rem; color: var(--muted); margin-bottom: 10px; }
+  .acc-balance { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 700; }
+  .acc-bar { height: 3px; border-radius: 2px; background: var(--border); margin-top: 12px; overflow: hidden; }
+  .acc-bar-fill { height: 100%; border-radius: 2px; }
+
+  /* Transactions */
+  .txn-table { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .txn-row { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--border); transition: background .15s; }
+  .txn-row:last-child { border-bottom: none; }
+  .txn-row:hover { background: var(--surface2); }
+  .txn-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .txn-info { flex: 1; }
+  .txn-name { font-size: .9rem; font-weight: 500; }
+  .txn-cat { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+  .txn-date { font-size: .75rem; color: var(--muted); }
+  .txn-amt { font-family: 'DM Mono', monospace; font-size: .95rem; font-weight: 600; }
+  .txn-amt.credit { color: var(--green); }
+  .txn-amt.debit { color: var(--red); }
+
+  /* ── INVESTMENTS TAB ── */
+  .invest-hero { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .invest-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+  .invest-ticker { font-family: 'DM Mono', monospace; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+  .invest-name { font-weight: 600; margin-bottom: 12px; }
+  .invest-price { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 700; }
+  .invest-change { font-size: .82rem; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+  .invest-chart { height: 50px; margin-top: 14px; }
+  .invest-chart svg { width: 100%; height: 100%; }
+  .portfolio-table { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .ptable-header { display: flex; padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .ptable-row { display: flex; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); transition: background .15s; }
+  .ptable-row:last-child { border-bottom: none; }
+  .ptable-row:hover { background: var(--surface2); }
+  .pcol-asset { flex: 2; }
+  .pcol-qty, .pcol-avg, .pcol-curr, .pcol-gain, .pcol-alloc { flex: 1; text-align: right; }
+  .pcol-asset .asset-name { font-weight: 600; font-size: .9rem; }
+  .pcol-asset .asset-type { font-size: .73rem; color: var(--muted); }
+  .gain-pos { color: var(--green); }
+  .gain-neg { color: var(--red); }
+  .alloc-bar { background: var(--border); border-radius: 2px; height: 4px; margin-top: 4px; }
+  .alloc-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+
+  /* ── GOALS TAB ── */
+  .goals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
+  .goal-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+  .goal-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .goal-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+  .goal-name { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; }
+  .goal-target { font-size: .8rem; color: var(--muted); }
+  .goal-pct { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; }
+  .goal-bar-bg { background: var(--border); border-radius: 6px; height: 8px; margin: 12px 0; overflow: hidden; }
+  .goal-bar-fill { height: 100%; border-radius: 6px; transition: width .5s ease; }
+  .goal-meta { display: flex; justify-content: space-between; font-size: .78rem; color: var(--muted); }
+
+  /* ── LOANS TAB ── */
+  .loans-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .loan-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+  .loan-type { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .loan-bank { font-weight: 600; margin-bottom: 14px; }
+  .loan-outstanding { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--red); }
+  .loan-emi { font-size: .82rem; color: var(--muted); margin-top: 4px; }
+  .loan-progress { margin-top: 14px; }
+  .loan-prog-label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: 6px; }
+  .loan-prog-bar { background: var(--border); border-radius: 4px; height: 6px; overflow: hidden; }
+  .loan-prog-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .emi-schedule { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .emi-row { display: flex; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); font-size: .88rem; transition: background .15s; }
+  .emi-row:hover { background: var(--surface2); }
+  .emi-row:last-child { border-bottom: none; }
+  .emi-month { flex: 1; font-weight: 500; }
+  .emi-principal, .emi-interest, .emi-balance { flex: 1; text-align: right; font-family: 'DM Mono', monospace; font-size: .83rem; }
+  .emi-status { flex: 1; text-align: right; }
+  .status-badge { font-size: .72rem; padding: 3px 8px; border-radius: 20px; font-weight: 600; }
+  .status-badge.paid { background: #00e5b022; color: var(--green); }
+  .status-badge.pending { background: #ffc94a22; color: var(--yellow); }
+  .status-badge.upcoming { background: #6c63ff22; color: var(--purple); }
+
+  /* ── TRACKING TAB ── */
+  .track-controls { display: flex; gap: 10px; margin-bottom: 24px; align-items: center; }
+  .track-type-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: .85rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+  .track-type-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .bar-chart-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 10px; height: 180px; }
+  .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .bars { display: flex; gap: 4px; align-items: flex-end; height: 150px; }
+  .bar { border-radius: 4px 4px 0 0; min-width: 14px; transition: opacity .2s; cursor: pointer; }
+  .bar:hover { opacity: .8; }
+  .bar.income { background: linear-gradient(180deg, var(--green), #00c49a); }
+  .bar.expense { background: linear-gradient(180deg, var(--red), #e05555); }
+  .bar-label { font-size: .72rem; color: var(--muted); }
+  .tracking-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+
+  /* ── MISC ── */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; }
+  .see-all { font-size: .82rem; color: var(--accent); cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; }
+  .see-all:hover { text-decoration: underline; }
+
+  .empty-state { text-align: center; padding: 48px; color: var(--muted); }
+  .empty-state .emoji { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty-state p { font-size: .9rem; }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    background: var(--surface); border: 1px solid var(--accent);
+    color: var(--text); padding: 14px 22px; border-radius: 12px;
+    font-size: .9rem; box-shadow: 0 8px 30px #0008;
+    transform: translateY(80px); opacity: 0; transition: all .35s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Responsive */
+  @media(max-width: 900px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-left: 0; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .accounts-grid { grid-template-columns: 1fr 1fr; }
+    .mid-grid { grid-template-columns: 1fr; }
+    .hamburger { display: flex !important; }
+  }
+  .hamburger { display: none; background: var(--surface); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: 10px; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- ══ LANDING ══ -->
+<div id="landing" class="screen active">
+  <div class="logo-badge"><span>💰</span> FINVAULT</div>
+  <h1 class="landing-title">Your Complete<br><span class="hl">Financial Health</span><br>Dashboard</h1>
+  <p class="landing-sub">Track investments, manage loans, hit savings goals, and monitor all your accounts — in one powerful place.</p>
+  <div class="auth-btns">
+    <button class="btn-primary" onclick="openModal('signup')">🚀 Get Started Free</button>
+    <button class="btn-secondary" onclick="openModal('login')">Sign In</button>
+    <button class="btn-secondary" onclick="openModal('bank')">🏦 Link Bank</button>
+  </div>
+  <div class="feature-pills">
+    <div class="pill"><span class="dot" style="background:var(--green)"></span> Real-time Tracking</div>
+    <div class="pill"><span class="dot" style="background:var(--purple)"></span> Smart Investments</div>
+    <div class="pill"><span class="dot" style="background:var(--yellow)"></span> Goal Planning</div>
+    <div class="pill"><span class="dot" style="background:var(--blue)"></span> Loan Manager</div>
+    <div class="pill"><span class="dot" style="background:var(--red)"></span> Expense Analytics</div>
+    <div class="pill"><span class="dot" style="background:var(--accent2)"></span> Multi-Bank Support</div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+<div id="dashboard" class="screen">
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text">💰 FinVault</div>
+      <div class="logo-sub">Financial Health Manager</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="switchTab('overview',this)"><span class="nav-icon">🏠</span>Dashboard</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Money</div>
+      <div class="nav-item" onclick="switchTab('accounts',this)"><span class="nav-icon">🏦</span>All Accounts</div>
+      <div class="nav-item" onclick="switchTab('investments',this)"><span class="nav-icon">📈</span>Investments<span class="nav-badge">3</span></div>
+      <div class="nav-item" onclick="switchTab('goals',this)"><span class="nav-icon">🎯</span>Goals</div>
+      <div class="nav-item" onclick="switchTab('loans',this)"><span class="nav-icon">🏷️</span>Loans & EMIs</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Analytics</div>
+      <div class="nav-item" onclick="switchTab('tracking',this)"><span class="nav-icon">📊</span>Tracking</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">R</div>
+        <div>
+          <div class="user-name" id="userName">Rahul Sharma</div>
+          <div class="user-email" id="userEmail">rahul@gmail.com</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">← Log out</button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main-content">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</button>
+        <div class="topbar-title">
+          <h1 id="topbarTitle">Dashboard</h1>
+          <p id="topbarSub">Welcome back! Here's your financial overview.</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="period-toggle">
+          <button class="period-btn active" onclick="setPeriod('D',this)">D</button>
+          <button class="period-btn" onclick="setPeriod('W',this)">W</button>
+          <button class="period-btn" onclick="setPeriod('M',this)">M</button>
+        </div>
+        <button class="notif-btn">🔔<span class="notif-dot"></span></button>
+      </div>
+    </div>
+
+    <!-- ─ OVERVIEW ─ -->
+    <div id="tab-overview" class="tab-panel active">
+      <div class="stats-grid">
+        <div class="stat-card green">
+          <div class="stat-label">Total Balance</div>
+          <div class="stat-value">₹4,82,310</div>
+          <div class="stat-change up">▲ 3.2% this month</div>
+          <div class="stat-icon">💰</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Investments</div>
+          <div class="stat-value">₹1,84,500</div>
+          <div class="stat-change up">▲ 12.4% returns</div>
+          <div class="stat-icon">📈</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-label">Monthly Spend</div>
+          <div class="stat-value">₹32,840</div>
+          <div class="stat-change down">▼ 4.1% vs last</div>
+          <div class="stat-icon">💸</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Loan Outstanding</div>
+          <div class="stat-value">₹2,10,000</div>
+          <div class="stat-change up">↓ Paid ₹12,400</div>
+          <div class="stat-icon">🏷️</div>
+        </div>
+      </div>
+
+      <div class="mid-grid">
+        <div class="chart-card">
+          <div class="card-header">
+            <div><div class="card-title">Income vs Expenses</div><div class="card-sub" id="chartPeriod">Last 7 days</div></div>
+            <div style="display:flex;gap:12px;font-size:.78rem">
+              <span style="color:var(--green)">● Income</span>
+              <span style="color:var(--red)">● Expense</span>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <svg viewBox="0 0 500 140" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#00e5b0" stop-opacity=".3"/>
+                  <stop offset="100%" stop-color="#00e5b0" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ff6b6b" stop-opacity=".3"/>
+                  <stop offset="100%" stop-color="#ff6b6b" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,80 C60,60 100,40 160,50 C220,60 260,30 320,35 C380,40 440,55 500,45 L500,140 L0,140Z" fill="url(#g1)"/>
+              <path d="M0,80 C60,60 100,40 160,50 C220,60 260,30 320,35 C380,40 440,55 500,45" fill="none" stroke="#00e5b0" stroke-width="2.5"/>
+              <path d="M0,100 C60,95 100,110 160,100 C220,90 260,105 320,95 C380,85 440,100 500,90 L500,140 L0,140Z" fill="url(#g2)"/>
+              <path d="M0,100 C60,95 100,110 160,100 C220,90 260,105 320,95 C380,85 440,100 500,90" fill="none" stroke="#ff6b6b" stroke-width="2.5"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="card-header"><div class="card-title">Spending Split</div></div>
+          <div class="donut-wrap">
+            <svg class="donut-svg" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1f2240" stroke-width="3.5"/>
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6c63ff" stroke-width="3.5" stroke-dasharray="40 60" stroke-dashoffset="25"/>
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#00e5b0" stroke-width="3.5" stroke-dasharray="25 75" stroke-dashoffset="-15"/>
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#ffc94a" stroke-width="3.5" stroke-dasharray="20 80" stroke-dashoffset="-40"/>
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#ff6b6b" stroke-width="3.5" stroke-dasharray="15 85" stroke-dashoffset="-60"/>
+            </svg>
+            <div class="donut-center"><div class="val">₹32.8K</div><div class="lbl">This month</div></div>
+            <div class="legend">
+              <div class="legend-item"><span style="display:flex;align-items:center"><span class="legend-dot" style="background:#6c63ff"></span>Food & Dining</span><strong>₹8,400</strong></div>
+              <div class="legend-item"><span style="display:flex;align-items:center"><span class="legend-dot" style="background:#00e5b0"></span>Shopping</span><strong>₹6,200</strong></div>
+              <div class="legend-item"><span style="display:flex;align-items:center"><span class="legend-dot" style="background:#ffc94a"></span>Transport</span><strong>₹4,800</strong></div>
+              <div class="legend-item"><span style="display:flex;align-items:center"><span class="legend-dot" style="background:#ff6b6b"></span>Bills</span><strong>₹13,440</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="section-header">
+        <div class="section-title">Recent Transactions</div>
+        <button class="see-all">See all →</button>
+      </div>
+      <div class="txn-table">
+        <div class="txn-row">
+          <div class="txn-icon" style="background:#6c63ff22">🛒</div>
+          <div class="txn-info"><div class="txn-name">Big Basket</div><div class="txn-cat">Groceries</div></div>
+          <div class="txn-date">Today, 9:14 AM</div>
+          <div class="txn-amt debit">-₹1,284</div>
+        </div>
+        <div class="txn-row">
+          <div class="txn-icon" style="background:#00e5b022">💼</div>
+          <div class="txn-info"><div class="txn-name">Salary Credit</div><div class="txn-cat">Income</div></div>
+          <div class="txn-date">Apr 30, 12:00 AM</div>
+          <div class="txn-amt credit">+₹72,000</div>
+        </div>
+        <div class="txn-row">
+          <div class="txn-icon" style="background:#ffc94a22">⛽</div>
+          <div class="txn-info"><div class="txn-name">Indian Oil Petrol</div><div class="txn-cat">Transport</div></div>
+          <div class="txn-date">Apr 29</div>
+          <div class="txn-amt debit">-₹2,100</div>
+        </div>
+        <div class="txn-row">
+          <div class="txn-icon" style="background:#ff6b6b22">📺</div>
+          <div class="txn-info"><div class="txn-name">Netflix + Jio</div><div class="txn-cat">Subscriptions</div></div>
+          <div class="txn-date">Apr 28</div>
+          <div class="txn-amt debit">-₹799</div>
+        </div>
+        <div class="txn-row">
+          <div class="txn-icon" style="background:#4fc3f722">📈</div>
+          <div class="txn-info"><div class="txn-name">SIP - Zerodha</div><div class="txn-cat">Investment</div></div>
+          <div class="txn-date">Apr 27</div>
+          <div class="txn-amt debit">-₹5,000</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ ACCOUNTS ─ -->
+    <div id="tab-accounts" class="tab-panel">
+      <div class="accounts-grid">
+        <div class="account-card">
+          <div class="acc-top">
+            <div><div class="acc-bank">State Bank of India</div><div class="acc-type">Savings Account</div></div>
+            <span class="acc-badge active">Active</span>
+          </div>
+          <div class="acc-num">•••• •••• 4821</div>
+          <div class="acc-balance">₹2,18,540</div>
+          <div class="acc-bar"><div class="acc-bar-fill" style="width:65%;background:var(--green)"></div></div>
+        </div>
+        <div class="account-card">
+          <div class="acc-top">
+            <div><div class="acc-bank">HDFC Bank</div><div class="acc-type">Current Account</div></div>
+            <span class="acc-badge active">Active</span>
+          </div>
+          <div class="acc-num">•••• •••• 9372</div>
+          <div class="acc-balance">₹1,46,200</div>
+          <div class="acc-bar"><div class="acc-bar-fill" style="width:45%;background:var(--purple)"></div></div>
+        </div>
+        <div class="account-card">
+          <div class="acc-top">
+            <div><div class="acc-bank">Axis Bank</div><div class="acc-type">Savings Account</div></div>
+            <span class="acc-badge linked">Linked</span>
+          </div>
+          <div class="acc-num">•••• •••• 6104</div>
+          <div class="acc-balance">₹87,900</div>
+          <div class="acc-bar"><div class="acc-bar-fill" style="width:30%;background:var(--yellow)"></div></div>
+        </div>
+        <div class="account-card">
+          <div class="acc-top">
+            <div><div class="acc-bank">ICICI Bank</div><div class="acc-type">Fixed Deposit</div></div>
+            <span class="acc-badge active">Active</span>
+          </div>
+          <div class="acc-num">FD-ICICI-••••2211</div>
+          <div class="acc-balance">₹50,000</div>
+          <div class="acc-bar"><div class="acc-bar-fill" style="width:100%;background:var(--blue)"></div></div>
+        </div>
+        <div class="account-card" style="cursor:default;border-style:dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;color:var(--muted);gap:8px" onclick="openModal('bank')">
+          <div style="font-size:2rem">＋</div>
+          <div style="font-size:.88rem">Link New Account</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ INVESTMENTS ─ -->
+    <div id="tab-investments" class="tab-panel">
+      <div class="invest-hero">
+        <div class="invest-card">
+          <div class="invest-ticker">RELIANCE.NS</div>
+          <div class="invest-name">Reliance Industries</div>
+          <div class="invest-price">₹2,914.50</div>
+          <div class="invest-change up">▲ 1.42% today</div>
+          <div class="invest-chart">
+            <svg viewBox="0 0 200 50" preserveAspectRatio="none">
+              <polyline points="0,40 40,35 80,25 120,28 160,18 200,20" fill="none" stroke="#00e5b0" stroke-width="2"/>
+            </svg>
+          </div>
+        </div>
+        <div class="invest-card">
+          <div class="invest-ticker">INFY.NS</div>
+          <div class="invest-name">Infosys Ltd</div>
+          <div class="invest-price">₹1,421.00</div>
+          <div class="invest-change down">▼ 0.78% today</div>
+          <div class="invest-chart">
+            <svg viewBox="0 0 200 50" preserveAspectRatio="none">
+              <polyline points="0,20 40,22 80,30 120,28 160,35 200,38" fill="none" stroke="#ff6b6b" stroke-width="2"/>
+            </svg>
+          </div>
+        </div>
+        <div class="invest-card">
+          <div class="invest-ticker">NIFTY50</div>
+          <div class="invest-name">Nifty 50 Index Fund</div>
+          <div class="invest-price">₹24,180.30</div>
+          <div class="invest-change up">▲ 0.61% today</div>
+          <div class="invest-chart">
+            <svg viewBox="0 0 200 50" preserveAspectRatio="none">
+              <polyline points="0,35 40,32 80,28 120,22 160,24 200,18" fill="none" stroke="#6c63ff" stroke-width="2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="section-header">
+        <div class="section-title">My Portfolio</div>
+        <button class="see-all" style="background:linear-gradient(135deg,var(--accent),#9c6fff);color:#fff;padding:8px 16px;border-radius:8px;border:none;font-size:.82rem;cursor:pointer">+ Add Investment</button>
+      </div>
+      <div class="portfolio-table">
+        <div class="ptable-header">
+          <div class="pcol-asset">Asset</div>
+          <div class="pcol-qty">Qty</div>
+          <div class="pcol-avg">Avg Price</div>
+          <div class="pcol-curr">Current</div>
+          <div class="pcol-gain">P&L</div>
+          <div class="pcol-alloc">Allocation</div>
+        </div>
+        <div class="ptable-row">
+          <div class="pcol-asset"><div class="asset-name">Reliance Ind.</div><div class="asset-type">Equity</div></div>
+          <div class="pcol-qty" style="text-align:right">15</div>
+          <div class="pcol-avg" style="text-align:right;font-family:DM Mono,monospace">₹2,620</div>
+          <div class="pcol-curr" style="text-align:right;font-family:DM Mono,monospace">₹2,914</div>
+          <div class="pcol-gain"><div class="gain-pos" style="text-align:right">+₹4,410<br><small>+11.2%</small></div></div>
+          <div class="pcol-alloc" style="text-align:right"><div>23.7%</div><div class="alloc-bar"><div class="alloc-fill" style="width:24%"></div></div></div>
+        </div>
+        <div class="ptable-row">
+          <div class="pcol-asset"><div class="asset-name">Infosys Ltd</div><div class="asset-type">Equity</div></div>
+          <div class="pcol-qty" style="text-align:right">20</div>
+          <div class="pcol-avg" style="text-align:right;font-family:DM Mono,monospace">₹1,510</div>
+          <div class="pcol-curr" style="text-align:right;font-family:DM Mono,monospace">₹1,421</div>
+          <div class="pcol-gain"><div class="gain-neg" style="text-align:right">-₹1,780<br><small>-5.9%</small></div></div>
+          <div class="pcol-alloc" style="text-align:right"><div>15.4%</div><div class="alloc-bar"><div class="alloc-fill" style="width:15%;background:var(--red)"></div></div></div>
+        </div>
+        <div class="ptable-row">
+          <div class="pcol-asset"><div class="asset-name">Nifty 50 ETF</div><div class="asset-type">Mutual Fund (SIP)</div></div>
+          <div class="pcol-qty" style="text-align:right">42 units</div>
+          <div class="pcol-avg" style="text-align:right;font-family:DM Mono,monospace">₹210</div>
+          <div class="pcol-curr" style="text-align:right;font-family:DM Mono,monospace">₹248</div>
+          <div class="pcol-gain"><div class="gain-pos" style="text-align:right">+₹1,596<br><small>+18.1%</small></div></div>
+          <div class="pcol-alloc" style="text-align:right"><div>56.1%</div><div class="alloc-bar"><div class="alloc-fill" style="width:56%"></div></div></div>
+        </div>
+        <div class="ptable-row">
+          <div class="pcol-asset"><div class="asset-name">Digital Gold</div><div class="asset-type">Commodity</div></div>
+          <div class="pcol-qty" style="text-align:right">2.5g</div>
+          <div class="pcol-avg" style="text-align:right;font-family:DM Mono,monospace">₹6,200/g</div>
+          <div class="pcol-curr" style="text-align:right;font-family:DM Mono,monospace">₹7,100/g</div>
+          <div class="pcol-gain"><div class="gain-pos" style="text-align:right">+₹2,250<br><small>+14.5%</small></div></div>
+          <div class="pcol-alloc" style="text-align:right"><div>4.8%</div><div class="alloc-bar"><div class="alloc-fill" style="width:5%;background:var(--yellow)"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ GOALS ─ -->
+    <div id="tab-goals" class="tab-panel">
+      <div class="goals-grid">
+        <div class="goal-card">
+          <div class="goal-top">
+            <div class="goal-icon" style="background:#6c63ff22">🏠</div>
+            <div class="goal-pct" style="color:var(--purple)">34%</div>
+          </div>
+          <div class="goal-name">Home Down Payment</div>
+          <div class="goal-target">Target: ₹10,00,000 • By Dec 2026</div>
+          <div class="goal-bar-bg"><div class="goal-bar-fill" style="width:34%;background:var(--purple)"></div></div>
+          <div class="goal-meta"><span>₹3,40,000 saved</span><span>₹6,60,000 to go</span></div>
+        </div>
+        <div class="goal-card">
+          <div class="goal-top">
+            <div class="goal-icon" style="background:#00e5b022">🎓</div>
+            <div class="goal-pct" style="color:var(--green)">68%</div>
+          </div>
+          <div class="goal-name">MBA Abroad Fund</div>
+          <div class="goal-target">Target: ₹25,00,000 • By Aug 2027</div>
+          <div class="goal-bar-bg"><div class="goal-bar-fill" style="width:68%;background:var(--green)"></div></div>
+          <div class="goal-meta"><span>₹17,00,000 saved</span><span>₹8,00,000 to go</span></div>
+        </div>
+        <div class="goal-card">
+          <div class="goal-top">
+            <div class="goal-icon" style="background:#ffc94a22">✈️</div>
+            <div class="goal-pct" style="color:var(--yellow)">82%</div>
+          </div>
+          <div class="goal-name">Europe Trip 2025</div>
+          <div class="goal-target">Target: ₹1,80,000 • By Sep 2025</div>
+          <div class="goal-bar-bg"><div class="goal-bar-fill" style="width:82%;background:var(--yellow)"></div></div>
+          <div class="goal-meta"><span>₹1,47,600 saved</span><span>₹32,400 to go</span></div>
+        </div>
+        <div class="goal-card">
+          <div class="goal-top">
+            <div class="goal-icon" style="background:#4fc3f722">🚗</div>
+            <div class="goal-pct" style="color:var(--blue)">15%</div>
+          </div>
+          <div class="goal-name">New Car Fund</div>
+          <div class="goal-target">Target: ₹5,00,000 • By Mar 2027</div>
+          <div class="goal-bar-bg"><div class="goal-bar-fill" style="width:15%;background:var(--blue)"></div></div>
+          <div class="goal-meta"><span>₹75,000 saved</span><span>₹4,25,000 to go</span></div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <button class="btn-primary" style="font-size:.9rem;padding:12px 26px">＋ Add New Goal</button>
+      </div>
+    </div>
+
+    <!-- ─ LOANS ─ -->
+    <div id="tab-loans" class="tab-panel">
+      <div class="loans-summary">
+        <div class="loan-card">
+          <div class="loan-type">Home Loan</div>
+          <div class="loan-bank">SBI Home Loan</div>
+          <div class="loan-outstanding">₹28,40,000</div>
+          <div class="loan-emi">EMI: ₹24,800/mo • 8.5% p.a.</div>
+          <div class="loan-progress">
+            <div class="loan-prog-label"><span>Repaid</span><span>18%</span></div>
+            <div class="loan-prog-bar"><div class="loan-prog-fill" style="width:18%"></div></div>
+          </div>
+        </div>
+        <div class="loan-card">
+          <div class="loan-type">Personal Loan</div>
+          <div class="loan-bank">HDFC Personal</div>
+          <div class="loan-outstanding">₹1,20,000</div>
+          <div class="loan-emi">EMI: ₹6,200/mo • 14% p.a.</div>
+          <div class="loan-progress">
+            <div class="loan-prog-label"><span>Repaid</span><span>60%</span></div>
+            <div class="loan-prog-bar"><div class="loan-prog-fill" style="width:60%"></div></div>
+          </div>
+        </div>
+        <div class="loan-card">
+          <div class="loan-type">Education Loan</div>
+          <div class="loan-bank">Bank of Baroda</div>
+          <div class="loan-outstanding">₹70,000</div>
+          <div class="loan-emi">EMI: ₹2,400/mo • 9% p.a.</div>
+          <div class="loan-progress">
+            <div class="loan-prog-label"><span>Repaid</span><span>82%</span></div>
+            <div class="loan-prog-bar"><div class="loan-prog-fill" style="width:82%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-title">EMI Schedule — HDFC Personal Loan</div>
+      </div>
+      <div class="emi-schedule">
+        <div class="emi-row" style="background:var(--surface2);font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">
+          <div class="emi-month">Month</div>
+          <div class="emi-principal">Principal</div>
+          <div class="emi-interest">Interest</div>
+          <div class="emi-balance">Balance</div>
+          <div class="emi-status">Status</div>
+        </div>
+        <div class="emi-row"><div class="emi-month">Feb 2025</div><div class="emi-principal">₹4,767</div><div class="emi-interest">₹1,433</div><div class="emi-balance">₹1,25,233</div><div class="emi-status"><span class="status-badge paid">Paid</span></div></div>
+        <div class="emi-row"><div class="emi-month">Mar 2025</div><div class="emi-principal">₹4,823</div><div class="emi-interest">₹1,377</div><div class="emi-balance">₹1,20,410</div><div class="emi-status"><span class="status-badge paid">Paid</span></div></div>
+        <div class="emi-row"><div class="emi-month">Apr 2025</div><div class="emi-principal">₹4,879</div><div class="emi-interest">₹1,321</div><div class="emi-balance">₹1,15,531</div><div class="emi-status"><span class="status-badge paid">Paid</span></div></div>
+        <div class="emi-row"><div class="emi-month">May 2025</div><div class="emi-principal">₹4,936</div><div class="emi-interest">₹1,264</div><div class="emi-balance">₹1,10,595</div><div class="emi-status"><span class="status-badge pending">Pending</span></div></div>
+        <div class="emi-row"><div class="emi-month">Jun 2025</div><div class="emi-principal">₹4,993</div><div class="emi-interest">₹1,207</div><div class="emi-balance">₹1,05,602</div><div class="emi-status"><span class="status-badge upcoming">Upcoming</span></div></div>
+        <div class="emi-row"><div class="emi-month">Jul 2025</div><div class="emi-principal">₹5,051</div><div class="emi-interest">₹1,149</div><div class="emi-balance">₹1,00,551</div><div class="emi-status"><span class="status-badge upcoming">Upcoming</span></div></div>
+      </div>
+    </div>
+
+    <!-- ─ TRACKING ─ -->
+    <div id="tab-tracking" class="tab-panel">
+      <div class="track-controls">
+        <span style="font-size:.85rem;color:var(--muted);margin-right:4px">View:</span>
+        <button class="track-type-btn active" onclick="setTrackPeriod('daily',this)">Daily</button>
+        <button class="track-type-btn" onclick="setTrackPeriod('weekly',this)">Weekly</button>
+        <button class="track-type-btn" onclick="setTrackPeriod('monthly',this)">Monthly</button>
+      </div>
+
+      <div class="bar-chart-wrap">
+        <div class="card-header">
+          <div><div class="card-title" id="trackChartTitle">Daily Cashflow — Last 7 Days</div><div class="card-sub">Income vs Expense comparison</div></div>
+          <div style="display:flex;gap:14px;font-size:.78rem">
+            <span style="color:var(--green)">■ Income</span>
+            <span style="color:var(--red)">■ Expense</span>
+          </div>
+        </div>
+        <div class="bar-chart" id="barChart"></div>
+      </div>
+
+      <div class="tracking-stats">
+        <div class="stat-card green">
+          <div class="stat-label">Total Income</div>
+          <div class="stat-value" style="font-size:1.3rem">₹72,000</div>
+          <div class="stat-change up">▲ Salary + freelance</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Total Spent</div>
+          <div class="stat-value" style="font-size:1.3rem">₹32,840</div>
+          <div class="stat-change down">▼ 4.1% less than April</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Net Savings</div>
+          <div class="stat-value" style="font-size:1.3rem">₹39,160</div>
+          <div class="stat-change up">▲ 54.4% save rate</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-label">Avg Daily Spend</div>
+          <div class="stat-value" style="font-size:1.3rem">₹1,061</div>
+          <div class="stat-change up">↓ Under budget</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /dashboard -->
+
+<!-- ══ MODALS ══ -->
+
+<!-- Signup -->
+<div class="modal-overlay" id="modal-signup">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('signup')">×</button>
+    <h2>Create Account</h2>
+    <p class="sub">Sign up to start managing your finances</p>
+    <button class="social-btn" onclick="googleSignUp()">
+      <svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Continue with Google
+    </button>
+    <div class="divider">or sign up with email</div>
+    <div class="form-group"><label>Full Name</label><input type="text" id="signupName" placeholder="Rahul Sharma"></div>
+    <div class="form-group"><label>Gmail Address</label><input type="email" id="signupEmail" placeholder="rahul@gmail.com"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="signupPass" placeholder="Min 8 characters"></div>
+    <div class="form-group"><label>Monthly Income (₹)</label><input type="number" id="signupIncome" placeholder="50000"></div>
+    <button class="full-btn" onclick="doSignup()">Create My Account →</button>
+    <div class="switch-auth">Already have an account? <a onclick="switchModal('signup','login')">Sign in</a></div>
+  </div>
+</div>
+
+<!-- Login -->
+<div class="modal-overlay" id="modal-login">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('login')">×</button>
+    <h2>Welcome Back</h2>
+    <p class="sub">Sign in to your FinVault account</p>
+    <button class="social-btn" onclick="googleSignUp()">
+      <svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Continue with Google
+    </button>
+    <div class="divider">or sign in with email</div>
+    <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="you@gmail.com"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+    <button class="full-btn" onclick="doLogin()">Sign In →</button>
+    <div class="switch-auth">New here? <a onclick="switchModal('login','signup')">Create account</a> &nbsp;|&nbsp; <a style="color:var(--muted)">Forgot password?</a></div>
+  </div>
+</div>
+
+<!-- Bank Login -->
+<div class="modal-overlay" id="modal-bank">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('bank')">×</button>
+    <h2>Link Your Bank</h2>
+    <p class="sub">Securely connect your bank account via net banking</p>
+    <div class="bank-grid">
+      <div class="bank-card" onclick="selectBank(this,'SBI')"><span class="bank-icon">🏦</span>SBI</div>
+      <div class="bank-card" onclick="selectBank(this,'HDFC')"><span class="bank-icon">🏛️</span>HDFC</div>
+      <div class="bank-card" onclick="selectBank(this,'ICICI')"><span class="bank-icon">💳</span>ICICI</div>
+      <div class="bank-card" onclick="selectBank(this,'Axis')"><span class="bank-icon">🏧</span>Axis</div>
+      <div class="bank-card" onclick="selectBank(this,'Kotak')"><span class="bank-icon">🏗️</span>Kotak</div>
+      <div class="bank-card" onclick="selectBank(this,'BOB')"><span class="bank-icon">🏢</span>Bank of Baroda</div>
+    </div>
+    <div id="bankFormArea" style="display:none">
+      <div class="form-group"><label>Net Banking User ID</label><input type="text" id="bankUser" placeholder="User ID"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="bankPass" placeholder="Net banking password"></div>
+      <div class="form-group"><label>Account Type</label>
+        <select id="bankType"><option>Savings Account</option><option>Current Account</option><option>Salary Account</option></select>
+      </div>
+    </div>
+    <button class="full-btn" onclick="linkBank()">🔐 Securely Link Account</button>
+    <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px">🔒 256-bit encrypted • Read-only access • No credentials stored</p>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">✅ <span id="toastMsg"></span></div>
+
+<script>
+  // ─ NAV ─
+  function switchTab(tabId, el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    if(el) el.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+    const titles = {overview:'Dashboard',accounts:'All Accounts',investments:'Investments',goals:'Financial Goals',loans:'Loans & EMIs',tracking:'Spending Tracker'};
+    const subs = {overview:"Welcome back! Here's your financial overview.",accounts:'All linked bank accounts',investments:'Your portfolio performance',goals:'Track your savings goals',loans:'EMI schedule & repayment',tracking:'Daily / Weekly / Monthly cashflow'};
+    document.getElementById('topbarTitle').textContent = titles[tabId]||tabId;
+    document.getElementById('topbarSub').textContent = subs[tabId]||'';
+    if(tabId==='tracking') buildBarChart('daily');
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  // ─ PERIOD ─
+  let currentPeriod = 'D';
+  function setPeriod(p, el) {
+    currentPeriod = p;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    const labels = {D:'Last 7 days', W:'Last 4 weeks', M:'Last 6 months'};
+    document.getElementById('chartPeriod').textContent = labels[p];
+  }
+
+  // ─ MODALS ─
+  function openModal(id) {
+    document.getElementById('modal-' + id).classList.add('open');
+  }
+  function closeModal(id) {
+    document.getElementById('modal-' + id).classList.remove('open');
+  }
+  function switchModal(from, to) {
+    closeModal(from); openModal(to);
+  }
+  window.addEventListener('click', e => {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => {
+      if(e.target === m) m.classList.remove('open');
+    });
+  });
+
+  // ─ BANK SELECT ─
+  let selectedBank = '';
+  function selectBank(el, name) {
+    document.querySelectorAll('.bank-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedBank = name;
+    document.getElementById('bankFormArea').style.display = 'block';
+  }
+
+  // ─ AUTH ─
+  function googleSignUp() {
+    closeModal('signup'); closeModal('login');
+    doEnterDashboard('Google User', 'user@gmail.com');
+  }
+
+  function doSignup() {
+    const name = document.getElementById('signupName').value || 'User';
+    const email = document.getElementById('signupEmail').value || 'user@gmail.com';
+    if(!email.includes('@')) { showToast('❌ Enter a valid Gmail address'); return; }
+    closeModal('signup');
+    doEnterDashboard(name, email);
+  }
+
+  function doLogin() {
+    const email = document.getElementById('loginEmail').value || 'rahul@gmail.com';
+    closeModal('login');
+    doEnterDashboard('Rahul Sharma', email);
+  }
+
+  function doEnterDashboard(name, email) {
+    document.getElementById('userName').textContent = name;
+    document.getElementById('userEmail').textContent = email;
+    document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+    document.getElementById('landing').classList.remove('active');
+    document.getElementById('dashboard').classList.add('active');
+    showToast('Welcome to FinVault, ' + name.split(' ')[0] + '! 🎉');
+  }
+
+  function linkBank() {
+    if(!selectedBank) { showToast('❌ Please select a bank first'); return; }
+    closeModal('bank');
+    showToast('🏦 ' + selectedBank + ' account linked successfully!');
+    if(document.getElementById('dashboard').classList.contains('active')) {
+      // update account count
+    }
+  }
+
+  function logout() {
+    document.getElementById('dashboard').classList.remove('active');
+    document.getElementById('landing').classList.add('active');
+    showToast('👋 Logged out. See you soon!');
+  }
+
+  // ─ TOAST ─
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ─ BAR CHART ─
+  const chartData = {
+    daily: {
+      labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+      income:  [0, 0, 72000, 0, 0, 0, 0],
+      expense: [1284, 2100, 5000, 800, 3200, 4500, 1200]
+    },
+    weekly: {
+      labels: ['Wk1','Wk2','Wk3','Wk4'],
+      income:  [72000, 4000, 2000, 3000],
+      expense: [12000, 8400, 7200, 5240]
+    },
+    monthly: {
+      labels: ['Nov','Dec','Jan','Feb','Mar','Apr'],
+      income:  [68000, 70000, 72000, 72000, 74000, 72000],
+      expense: [35000, 40000, 30000, 28000, 34000, 32840]
+    }
+  };
+
+  function buildBarChart(period) {
+    const d = chartData[period];
+    const maxVal = Math.max(...d.income, ...d.expense, 1);
+    const wrap = document.getElementById('barChart');
+    wrap.innerHTML = '';
+    d.labels.forEach((lbl, i) => {
+      const incH = Math.round((d.income[i] / maxVal) * 140);
+      const expH = Math.round((d.expense[i] / maxVal) * 140);
+      wrap.innerHTML += `
+        <div class="bar-group">
+          <div class="bars">
+            <div class="bar income" style="height:${incH}px" title="Income: ₹${d.income[i].toLocaleString('en-IN')}"></div>
+            <div class="bar expense" style="height:${expH}px" title="Expense: ₹${d.expense[i].toLocaleString('en-IN')}"></div>
+          </div>
+          <div class="bar-label">${lbl}</div>
+        </div>`;
+    });
+    const titles = {daily:'Daily Cashflow — Last 7 Days', weekly:'Weekly Cashflow — Last 4 Weeks', monthly:'Monthly Cashflow — Last 6 Months'};
+    const el = document.getElementById('trackChartTitle');
+    if(el) el.textContent = titles[period];
+  }
+
+  function setTrackPeriod(period, el) {
+    document.querySelectorAll('.track-type-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    buildBarChart(period);
+  }
+
+  // Init
+  buildBarChart('daily');
+</script>
+</body>
+</html>
+financial-dashboard didi project.html
+Displaying financial-dashboard didi project.html.

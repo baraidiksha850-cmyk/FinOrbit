@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FinVault — Financial Health Manager</title>
+<title>FinOrbit — Financial Health Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -424,7 +424,7 @@
 
 <!-- ══ LANDING ══ -->
 <div id="landing" class="screen active">
-  <div class="logo-badge"><span>💰</span> FINVAULT</div>
+  <div class="logo-badge"><span>💰</span> FINORBIT</div>
   <h1 class="landing-title">Your Complete<br><span class="hl">Financial Health</span><br>Dashboard</h1>
   <p class="landing-sub">Track investments, manage loans, hit savings goals, and monitor all your accounts — in one powerful place.</p>
   <div class="auth-btns">
@@ -447,7 +447,7 @@
   <!-- Sidebar -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-text">💰 FinVault</div>
+      <div class="logo-text">💰 FinOrbit</div>
       <div class="logo-sub">Financial Health Manager</div>
     </div>
     <div class="nav-section">
@@ -593,36 +593,10 @@
         <div class="section-title">Recent Transactions</div>
         <button class="see-all">See all →</button>
       </div>
-      <div class="txn-table">
-        <div class="txn-row">
-          <div class="txn-icon" style="background:#6c63ff22">🛒</div>
-          <div class="txn-info"><div class="txn-name">Big Basket</div><div class="txn-cat">Groceries</div></div>
-          <div class="txn-date">Today, 9:14 AM</div>
-          <div class="txn-amt debit">-₹1,284</div>
-        </div>
-        <div class="txn-row">
-          <div class="txn-icon" style="background:#00e5b022">💼</div>
-          <div class="txn-info"><div class="txn-name">Salary Credit</div><div class="txn-cat">Income</div></div>
-          <div class="txn-date">Apr 30, 12:00 AM</div>
-          <div class="txn-amt credit">+₹72,000</div>
-        </div>
-        <div class="txn-row">
-          <div class="txn-icon" style="background:#ffc94a22">⛽</div>
-          <div class="txn-info"><div class="txn-name">Indian Oil Petrol</div><div class="txn-cat">Transport</div></div>
-          <div class="txn-date">Apr 29</div>
-          <div class="txn-amt debit">-₹2,100</div>
-        </div>
-        <div class="txn-row">
-          <div class="txn-icon" style="background:#ff6b6b22">📺</div>
-          <div class="txn-info"><div class="txn-name">Netflix + Jio</div><div class="txn-cat">Subscriptions</div></div>
-          <div class="txn-date">Apr 28</div>
-          <div class="txn-amt debit">-₹799</div>
-        </div>
-        <div class="txn-row">
-          <div class="txn-icon" style="background:#4fc3f722">📈</div>
-          <div class="txn-info"><div class="txn-name">SIP - Zerodha</div><div class="txn-cat">Investment</div></div>
-          <div class="txn-date">Apr 27</div>
-          <div class="txn-amt debit">-₹5,000</div>
+      <div class="txn-table" id="transactionsTable">
+        <div class="empty-state">
+          <div class="emoji">📝</div>
+          <p>No transactions added yet</p>
         </div>
       </div>
     </div>
@@ -936,7 +910,7 @@
   <div class="modal">
     <button class="modal-close" onclick="closeModal('login')">×</button>
     <h2>Welcome Back</h2>
-    <p class="sub">Sign in to your FinVault account</p>
+    <p class="sub">Sign in to your FinOrbit account</p>
     <button class="social-btn" onclick="googleSignUp()">
       <svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Continue with Google
@@ -1039,9 +1013,26 @@
   function setPeriod(p, el) {
     currentPeriod = p;
     document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-    const labels = {D:'Last 7 days', W:'Last 4 weeks', M:'Last 6 months'};
-    document.getElementById('chartPeriod').textContent = labels[p];
+    if(el) el.classList.add('active');
+
+    const data = getSavedProfile(currentUserEmail) || {};
+    const summary = getPeriodSummary(data, p);
+    const labels = {D:'Today', W:'Last 7 days', M:'This month'};
+    const chartPeriodEl = document.getElementById('chartPeriod');
+    if(chartPeriodEl) chartPeriodEl.textContent = labels[p];
+
+    const statValues = document.querySelectorAll('#tab-overview .stat-value');
+    if(statValues[2]) statValues[2].textContent = money(summary.expense);
+
+    const trackingValues = document.querySelectorAll('#tab-tracking .stat-value');
+    const income = Number(data.income || 0);
+    const periodIncome = p === 'M' ? income : p === 'W' ? Math.round(income / 4) : Math.round(income / 30);
+    if(trackingValues[0]) trackingValues[0].textContent = money(periodIncome);
+    if(trackingValues[1]) trackingValues[1].textContent = money(summary.expense);
+    if(trackingValues[2]) trackingValues[2].textContent = money(periodIncome - summary.expense);
+    if(trackingValues[3]) trackingValues[3].textContent = money(p === 'D' ? summary.expense : Math.round(summary.expense / summary.days));
+
+    buildBarChart(p === 'D' ? 'daily' : p === 'W' ? 'weekly' : 'monthly');
   }
 
   // ─ MODALS ─
@@ -1108,6 +1099,58 @@
     };
   }
 
+  function splitTotal(split) {
+    return Number(split?.food || 0) + Number(split?.shopping || 0) + Number(split?.transport || 0) + Number(split?.bills || 0);
+  }
+
+  function getPeriodSummary(data, period) {
+    const spending = data?.dailySpending || {};
+    const today = new Date(todayKey());
+    let total = 0;
+    let days = 1;
+    Object.entries(spending).forEach(([dateKey, split]) => {
+      const dt = new Date(dateKey);
+      const diffDays = Math.floor((today - dt) / (1000 * 60 * 60 * 24));
+      const sameMonth = dt.getFullYear() === today.getFullYear() && dt.getMonth() === today.getMonth();
+      if(period === 'D' && dateKey === todayKey()) total += splitTotal(split);
+      if(period === 'W' && diffDays >= 0 && diffDays < 7) total += splitTotal(split);
+      if(period === 'M' && sameMonth) total += splitTotal(split);
+    });
+    if(period === 'W') days = 7;
+    if(period === 'M') days = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    return { expense: total, days };
+  }
+
+  function renderTransactions(data) {
+    const table = document.getElementById('transactionsTable');
+    if(!table) return;
+    const spending = data?.dailySpending || {};
+    const rows = Object.entries(spending)
+      .map(([dateKey, split]) => ({ dateKey, split, total: splitTotal(split) }))
+      .filter(row => row.total > 0)
+      .sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+
+    if(rows.length === 0) {
+      table.innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">📝</div>
+          <p>No transactions added yet</p>
+        </div>`;
+      return;
+    }
+
+    table.innerHTML = rows.map(row => `
+      <div class="txn-row">
+        <div class="txn-icon" style="background:#6c63ff22">💳</div>
+        <div class="txn-info">
+          <div class="txn-name">Daily Spending</div>
+          <div class="txn-cat">Food ${money(row.split.food)} • Shopping ${money(row.split.shopping)} • Transport ${money(row.split.transport)} • Bills ${money(row.split.bills)}</div>
+        </div>
+        <div class="txn-date">${row.dateKey}</div>
+        <div class="txn-amt debit">-${money(row.total)}</div>
+      </div>`).join('');
+  }
+
   function setDailyInputs(split, dateKey) {
     const dateEl = document.getElementById('dailySpendDate');
     if(dateEl) dateEl.value = dateKey || todayKey();
@@ -1164,6 +1207,8 @@
     data.expense = split.food + split.shopping + split.transport + split.bills;
     localStorage.setItem(storageKey(currentUserEmail), JSON.stringify(data));
     applyFinancialData(data, dateKey);
+    renderTransactions(data);
+    setPeriod(currentPeriod, document.querySelector('.period-btn.active'));
     showToast('✅ Daily spending saved for ' + dateKey);
   }
 
@@ -1259,7 +1304,9 @@
     const split = getSpendingForDate(data, activeDateKey);
     data.expense = renderSpendingSplit(split, activeDateKey);
     setDailyInputs(split, activeDateKey);
-    if(statValues[2]) statValues[2].textContent = money(data.expense);
+    const periodSummary = getPeriodSummary(data, currentPeriod);
+    if(statValues[2]) statValues[2].textContent = money(periodSummary.expense);
+    renderTransactions(data);
 
     const accountGrid = document.querySelector('#tab-accounts .accounts-grid');
     if(accountGrid) {
@@ -1276,10 +1323,11 @@
     }
 
     const trackingValues = document.querySelectorAll('#tab-tracking .stat-value');
-    if(trackingValues[0]) trackingValues[0].textContent = money(data.income);
-    if(trackingValues[1]) trackingValues[1].textContent = money(data.expense);
-    if(trackingValues[2]) trackingValues[2].textContent = money(netSavings);
-    if(trackingValues[3]) trackingValues[3].textContent = money(Math.round(data.expense / 30));
+    const periodIncome = currentPeriod === 'M' ? Number(data.income || 0) : currentPeriod === 'W' ? Math.round(Number(data.income || 0) / 4) : Math.round(Number(data.income || 0) / 30);
+    if(trackingValues[0]) trackingValues[0].textContent = money(periodIncome);
+    if(trackingValues[1]) trackingValues[1].textContent = money(periodSummary.expense);
+    if(trackingValues[2]) trackingValues[2].textContent = money(periodIncome - periodSummary.expense);
+    if(trackingValues[3]) trackingValues[3].textContent = money(currentPeriod === 'D' ? periodSummary.expense : Math.round(periodSummary.expense / periodSummary.days));
 
     // Update complete Goals tab. Removes old hardcoded sample goals.
     const goalsGrid = document.querySelector('#tab-goals .goals-grid');
@@ -1431,28 +1479,59 @@
   }
 
   // ─ BAR CHART ─
-  const chartData = {
-    daily: {
-      labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
-      income:  [0, 0, 72000, 0, 0, 0, 0],
-      expense: [1284, 2100, 5000, 800, 3200, 4500, 1200]
-    },
-    weekly: {
-      labels: ['Wk1','Wk2','Wk3','Wk4'],
-      income:  [72000, 4000, 2000, 3000],
-      expense: [12000, 8400, 7200, 5240]
-    },
-    monthly: {
-      labels: ['Nov','Dec','Jan','Feb','Mar','Apr'],
-      income:  [68000, 70000, 72000, 72000, 74000, 72000],
-      expense: [35000, 40000, 30000, 28000, 34000, 32840]
+  function getDynamicChartData(period) {
+    const data = getSavedProfile(currentUserEmail) || {};
+    const spending = data.dailySpending || {};
+    const incomeMonthly = Number(data.income || 0);
+    const today = new Date(todayKey());
+
+    if(period === 'daily') {
+      const labels = [];
+      const expense = [];
+      for(let i = 6; i >= 0; i--) {
+        const dt = new Date(today);
+        dt.setDate(today.getDate() - i);
+        const key = dt.toISOString().slice(0, 10);
+        labels.push(dt.toLocaleDateString('en-IN', { weekday: 'short' }));
+        expense.push(splitTotal(spending[key] || {}));
+      }
+      return { labels, income: Array(7).fill(Math.round(incomeMonthly / 30)), expense };
     }
-  };
+
+    if(period === 'weekly') {
+      const labels = ['Wk1','Wk2','Wk3','Wk4'];
+      const expense = [0, 0, 0, 0];
+      Object.entries(spending).forEach(([key, split]) => {
+        const dt = new Date(key);
+        const diffDays = Math.floor((today - dt) / (1000 * 60 * 60 * 24));
+        if(diffDays >= 0 && diffDays < 28) {
+          const index = 3 - Math.floor(diffDays / 7);
+          expense[index] += splitTotal(split);
+        }
+      });
+      return { labels, income: Array(4).fill(Math.round(incomeMonthly / 4)), expense };
+    }
+
+    const labels = [];
+    const expense = [];
+    for(let i = 5; i >= 0; i--) {
+      const dt = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      labels.push(dt.toLocaleDateString('en-IN', { month: 'short' }));
+      let monthTotal = 0;
+      Object.entries(spending).forEach(([key, split]) => {
+        const d = new Date(key);
+        if(d.getFullYear() === dt.getFullYear() && d.getMonth() === dt.getMonth()) monthTotal += splitTotal(split);
+      });
+      expense.push(monthTotal);
+    }
+    return { labels, income: Array(6).fill(incomeMonthly), expense };
+  }
 
   function buildBarChart(period) {
-    const d = chartData[period];
+    const d = getDynamicChartData(period);
     const maxVal = Math.max(...d.income, ...d.expense, 1);
     const wrap = document.getElementById('barChart');
+    if(!wrap) return;
     wrap.innerHTML = '';
     d.labels.forEach((lbl, i) => {
       const incH = Math.round((d.income[i] / maxVal) * 140);
@@ -1460,8 +1539,8 @@
       wrap.innerHTML += `
         <div class="bar-group">
           <div class="bars">
-            <div class="bar income" style="height:${incH}px" title="Income: ₹${d.income[i].toLocaleString('en-IN')}"></div>
-            <div class="bar expense" style="height:${expH}px" title="Expense: ₹${d.expense[i].toLocaleString('en-IN')}"></div>
+            <div class="bar income" style="height:${incH}px" title="Income: ${money(d.income[i])}"></div>
+            <div class="bar expense" style="height:${expH}px" title="Expense: ${money(d.expense[i])}"></div>
           </div>
           <div class="bar-label">${lbl}</div>
         </div>`;
@@ -1479,6 +1558,7 @@
 
   // Init
   buildBarChart('daily');
+  renderTransactions(getSavedProfile(currentUserEmail) || {});
 </script>
 </body>
 </html>

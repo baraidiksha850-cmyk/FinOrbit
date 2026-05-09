@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FinOrbit — Financial Health Manager</title>
+<title>FinVault — Financial Health Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -382,6 +382,31 @@
   }
   .toast.show { transform: translateY(0); opacity: 1; }
 
+
+
+  /* First login setup form */
+  .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .setup-note { background: #6c63ff18; border: 1px solid #6c63ff44; color: var(--text); padding: 10px 12px; border-radius: 10px; font-size: .82rem; margin-bottom: 16px; }
+  @media(max-width: 600px) { .setup-grid { grid-template-columns: 1fr; } }
+
+
+  .daily-spending-form {
+    width: 100%; margin: 14px 0; padding: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  }
+  .daily-spending-title { font-size: .82rem; color: var(--muted); margin-bottom: 10px; font-weight: 600; }
+  .daily-spending-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .daily-spending-grid input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 9px 10px; border-radius: 8px; font-size: .82rem; outline: none;
+  }
+  .daily-spending-grid input:focus { border-color: var(--accent); }
+  .mini-save-btn {
+    width: 100%; margin-top: 10px; padding: 10px; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #9c6fff); color: #fff;
+    font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+
   /* Responsive */
   @media(max-width: 900px) {
     .sidebar { transform: translateX(-100%); }
@@ -399,7 +424,7 @@
 
 <!-- ══ LANDING ══ -->
 <div id="landing" class="screen active">
-  <div class="logo-badge"><span>💰</span> FINORBIT</div>
+  <div class="logo-badge"><span>💰</span> FINVAULT</div>
   <h1 class="landing-title">Your Complete<br><span class="hl">Financial Health</span><br>Dashboard</h1>
   <p class="landing-sub">Track investments, manage loans, hit savings goals, and monitor all your accounts — in one powerful place.</p>
   <div class="auth-btns">
@@ -422,7 +447,7 @@
   <!-- Sidebar -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-text">💰 FinOrbit</div>
+      <div class="logo-text">💰 FinVault</div>
       <div class="logo-sub">Financial Health Manager</div>
     </div>
     <div class="nav-section">
@@ -442,10 +467,10 @@
     </div>
     <div class="sidebar-user">
       <div class="user-info">
-        <div class="user-avatar" id="userAvatar"></div>
+        <div class="user-avatar" id="userAvatar">R</div>
         <div>
-          <div class="user-name" id="userName"></div>
-          <div class="user-email" id="userEmail"></div>
+          <div class="user-name" id="userName">Rahul Sharma</div>
+          <div class="user-email" id="userEmail">rahul@gmail.com</div>
         </div>
       </div>
       <button class="logout-btn" onclick="logout()">← Log out</button>
@@ -463,7 +488,8 @@
         </div>
       </div>
       <div class="topbar-right">
-        <div class="period-toggle">
+        <button class="btn-secondary" style="padding:9px 14px;font-size:.82rem" onclick="openModal('setup')">Edit Amounts</button>
+        <div class="period-toggle" id="mainPeriodToggle">
           <button class="period-btn active" onclick="setPeriod('D',this)">D</button>
           <button class="period-btn" onclick="setPeriod('W',this)">W</button>
           <button class="period-btn" onclick="setPeriod('M',this)">M</button>
@@ -540,7 +566,18 @@
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="#ffc94a" stroke-width="3.5" stroke-dasharray="20 80" stroke-dashoffset="-40"/>
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="#ff6b6b" stroke-width="3.5" stroke-dasharray="15 85" stroke-dashoffset="-60"/>
             </svg>
-            <div class="donut-center"><div class="val">₹32.8K</div><div class="lbl">This month</div></div>
+            <div class="donut-center"><div class="val">₹0</div><div class="lbl" id="spendingDateLabel">Today</div></div>
+            <div class="daily-spending-form">
+              <div class="daily-spending-title">Enter daily spending split</div>
+              <div class="daily-spending-grid">
+                <input type="date" id="dailySpendDate" onchange="loadSpendingForSelectedDate()">
+                <input type="number" id="dailyFood" placeholder="Food ₹" min="0">
+                <input type="number" id="dailyShopping" placeholder="Shopping ₹" min="0">
+                <input type="number" id="dailyTransport" placeholder="Transport ₹" min="0">
+                <input type="number" id="dailyBills" placeholder="Bills ₹" min="0">
+              </div>
+              <button class="mini-save-btn" onclick="saveDailySpending()">Save Daily Spending</button>
+            </div>
             <div class="legend">
               <div class="legend-item"><span style="display:flex;align-items:center"><span class="legend-dot" style="background:#6c63ff"></span>Food & Dining</span><strong>₹8,400</strong></div>
               <div class="legend-item"><span style="display:flex;align-items:center"><span class="legend-dot" style="background:#00e5b0"></span>Shopping</span><strong>₹6,200</strong></div>
@@ -885,8 +922,8 @@
       Continue with Google
     </button>
     <div class="divider">or sign up with email</div>
-    <div class="form-group"><label>Full Name</label><input type="text" id="signupName" placeholder="Diksha Barai"></div>
-    <div class="form-group"><label>Gmail Address</label><input type="email" id="signupEmail" placeholder="diksha@gmail.com"></div>
+    <div class="form-group"><label>Full Name</label><input type="text" id="signupName" placeholder="Rahul Sharma"></div>
+    <div class="form-group"><label>Gmail Address</label><input type="email" id="signupEmail" placeholder="rahul@gmail.com"></div>
     <div class="form-group"><label>Password</label><input type="password" id="signupPass" placeholder="Min 8 characters"></div>
     <div class="form-group"><label>Monthly Income (₹)</label><input type="number" id="signupIncome" placeholder="50000"></div>
     <button class="full-btn" onclick="doSignup()">Create My Account →</button>
@@ -899,7 +936,7 @@
   <div class="modal">
     <button class="modal-close" onclick="closeModal('login')">×</button>
     <h2>Welcome Back</h2>
-    <p class="sub">Sign in to your Fin account</p>
+    <p class="sub">Sign in to your FinVault account</p>
     <button class="social-btn" onclick="googleSignUp()">
       <svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Continue with Google
@@ -938,6 +975,37 @@
   </div>
 </div>
 
+
+
+<!-- First Login Financial Setup -->
+<div class="modal-overlay" id="modal-setup">
+  <div class="modal" style="max-width:640px">
+    <button class="modal-close" onclick="closeModal('setup')">×</button>
+    <h2>Set Your Financial Details</h2>
+    <p class="sub">Enter your own bank and amounts. These values will appear in your dashboard.</p>
+    <div class="setup-note">This is for your project demo only. The data is saved in this browser using localStorage.</div>
+    <div class="setup-grid">
+      <div class="form-group"><label>Bank Name</label>
+        <select id="setupBank">
+          <option>State Bank of India</option><option>HDFC Bank</option><option>ICICI Bank</option><option>Axis Bank</option><option>Kotak Bank</option><option>Bank of Baroda</option><option>Other Bank</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Account Type</label>
+        <select id="setupAccountType"><option>Savings Account</option><option>Current Account</option><option>Salary Account</option><option>Fixed Deposit</option></select>
+      </div>
+      <div class="form-group"><label>Total Bank Balance ₹</label><input type="number" id="setupBalance" placeholder="50000" min="0"></div>
+      <div class="form-group"><label>Monthly Income ₹</label><input type="number" id="setupIncome" placeholder="30000" min="0"></div>
+      <div class="form-group"><label>Monthly Expense ₹</label><input type="number" id="setupExpense" placeholder="12000" min="0"></div>
+      <div class="form-group"><label>Investments Amount ₹</label><input type="number" id="setupInvestment" placeholder="10000" min="0"></div>
+      <div class="form-group"><label>Loan Outstanding ₹</label><input type="number" id="setupLoan" placeholder="0" min="0"></div>
+      <div class="form-group"><label>Goal Target ₹</label><input type="number" id="setupGoalTarget" placeholder="100000" min="0"></div>
+      <div class="form-group"><label>Goal Saved ₹</label><input type="number" id="setupGoalSaved" placeholder="25000" min="0"></div>
+      <div class="form-group"><label>Account Last 4 Digits</label><input type="text" id="setupLast4" placeholder="1234" maxlength="4"></div>
+    </div>
+    <button class="full-btn" onclick="saveSetup()">Save & Open Dashboard →</button>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast">✅ <span id="toastMsg"></span></div>
 
@@ -952,6 +1020,13 @@
     const subs = {overview:"Welcome back! Here's your financial overview.",accounts:'All linked bank accounts',investments:'Your portfolio performance',goals:'Track your savings goals',loans:'EMI schedule & repayment',tracking:'Daily / Weekly / Monthly cashflow'};
     document.getElementById('topbarTitle').textContent = titles[tabId]||tabId;
     document.getElementById('topbarSub').textContent = subs[tabId]||'';
+
+    // Show Daily / Weekly / Monthly only on Dashboard, Investments and Goals
+    const periodToggle = document.getElementById('mainPeriodToggle');
+    if (periodToggle) {
+      periodToggle.style.display = ['overview', 'investments', 'goals'].includes(tabId) ? 'flex' : 'none';
+    }
+
     if(tabId==='tracking') buildBarChart('daily');
   }
 
@@ -995,6 +1070,103 @@
   }
 
   // ─ AUTH ─
+  let currentUserEmail = '';
+
+  function money(value) {
+    return '₹' + Number(value || 0).toLocaleString('en-IN');
+  }
+
+  function storageKey(email) {
+    return 'finvault_user_' + (email || 'guest').toLowerCase();
+  }
+
+  function getSavedProfile(email) {
+    try { return JSON.parse(localStorage.getItem(storageKey(email))) || null; }
+    catch(e) { return null; }
+  }
+
+
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function getSpendingForDate(data, dateKey) {
+    const entry = data?.dailySpending?.[dateKey];
+    if(entry) {
+      return {
+        food: Number(entry.food || 0),
+        shopping: Number(entry.shopping || 0),
+        transport: Number(entry.transport || 0),
+        bills: Number(entry.bills || 0)
+      };
+    }
+    return {
+      food: 0,
+      shopping: 0,
+      transport: 0,
+      bills: 0
+    };
+  }
+
+  function setDailyInputs(split, dateKey) {
+    const dateEl = document.getElementById('dailySpendDate');
+    if(dateEl) dateEl.value = dateKey || todayKey();
+    const fields = { dailyFood: split.food, dailyShopping: split.shopping, dailyTransport: split.transport, dailyBills: split.bills };
+    Object.entries(fields).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if(el) el.value = Number(value || 0);
+    });
+  }
+
+  function renderSpendingSplit(split, dateKey) {
+    const total = Number(split.food || 0) + Number(split.shopping || 0) + Number(split.transport || 0) + Number(split.bills || 0);
+    const donutCenterVal = document.querySelector('#tab-overview .donut-center .val');
+    if(donutCenterVal) donutCenterVal.textContent = money(total);
+    const lbl = document.getElementById('spendingDateLabel');
+    if(lbl) lbl.textContent = dateKey ? 'For ' + dateKey : 'Today';
+    const legend = document.querySelector('#tab-overview .legend');
+    if(legend) {
+      legend.innerHTML = `
+        <div class="legend-item"><span style="display:flex;align-items:center"><span class="legend-dot" style="background:#6c63ff"></span>Food & Dining</span><strong>${money(split.food)}</strong></div>
+        <div class="legend-item"><span style="display:flex;align-items:center"><span class="legend-dot" style="background:#00e5b0"></span>Shopping</span><strong>${money(split.shopping)}</strong></div>
+        <div class="legend-item"><span style="display:flex;align-items:center"><span class="legend-dot" style="background:#ffc94a"></span>Transport</span><strong>${money(split.transport)}</strong></div>
+        <div class="legend-item"><span style="display:flex;align-items:center"><span class="legend-dot" style="background:#ff6b6b"></span>Bills</span><strong>${money(split.bills)}</strong></div>`;
+    }
+    return total;
+  }
+
+  function loadSpendingForSelectedDate() {
+    const data = getSavedProfile(currentUserEmail) || {};
+    const dateKey = document.getElementById('dailySpendDate')?.value || todayKey();
+    const split = getSpendingForDate(data, dateKey);
+    setDailyInputs(split, dateKey);
+    renderSpendingSplit(split, dateKey);
+  }
+
+  function saveDailySpending() {
+    const dateKey = document.getElementById('dailySpendDate')?.value || todayKey();
+    const split = {
+      food: Number(document.getElementById('dailyFood')?.value || 0),
+      shopping: Number(document.getElementById('dailyShopping')?.value || 0),
+      transport: Number(document.getElementById('dailyTransport')?.value || 0),
+      bills: Number(document.getElementById('dailyBills')?.value || 0)
+    };
+    if(split.food < 0 || split.shopping < 0 || split.transport < 0 || split.bills < 0) {
+      showToast('❌ Spending amounts cannot be negative'); return;
+    }
+    const data = getSavedProfile(currentUserEmail) || {};
+    data.dailySpending = data.dailySpending || {};
+    data.dailySpending[dateKey] = split;
+    data.food = split.food;
+    data.shopping = split.shopping;
+    data.transport = split.transport;
+    data.bills = split.bills;
+    data.expense = split.food + split.shopping + split.transport + split.bills;
+    localStorage.setItem(storageKey(currentUserEmail), JSON.stringify(data));
+    applyFinancialData(data, dateKey);
+    showToast('✅ Daily spending saved for ' + dateKey);
+  }
+
   function googleSignUp() {
     closeModal('signup'); closeModal('login');
     doEnterDashboard('Google User', 'user@gmail.com');
@@ -1009,27 +1181,239 @@
   }
 
   function doLogin() {
-    const email = document.getElementById('loginEmail').value || '@gmail.com';
+    const email = document.getElementById('loginEmail').value || 'user@gmail.com';
+    if(!email.includes('@')) { showToast('❌ Enter a valid Gmail address'); return; }
     closeModal('login');
-    doEnterDashboard('', email);
+    const name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    doEnterDashboard(name, email);
   }
 
   function doEnterDashboard(name, email) {
+    currentUserEmail = email;
     document.getElementById('userName').textContent = name;
     document.getElementById('userEmail').textContent = email;
     document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
     document.getElementById('landing').classList.remove('active');
     document.getElementById('dashboard').classList.add('active');
-    showToast('Welcome to FinOrbit, ' + name.split(' ')[0] + '! 🎉');
+
+    const saved = getSavedProfile(email);
+    if(saved) {
+      applyFinancialData(saved);
+      showToast('Welcome back, ' + name.split(' ')[0] + '! 🎉');
+    } else {
+      openModal('setup');
+      showToast('Please set your bank and amounts first.');
+    }
+  }
+
+  function saveSetup() {
+    const data = {
+      bank: document.getElementById('setupBank').value,
+      accountType: document.getElementById('setupAccountType').value,
+      balance: Number(document.getElementById('setupBalance').value || 0),
+      income: Number(document.getElementById('setupIncome').value || 0),
+      expense: Number(document.getElementById('setupExpense').value || 0),
+      investment: Number(document.getElementById('setupInvestment').value || 0),
+      loan: Number(document.getElementById('setupLoan').value || 0),
+      goalTarget: Number(document.getElementById('setupGoalTarget').value || 0),
+      goalSaved: Number(document.getElementById('setupGoalSaved').value || 0),
+      last4: (document.getElementById('setupLast4').value || '0000').slice(-4),
+      food: 0,
+      shopping: 0,
+      transport: 0,
+      bills: 0,
+      dailySpending: {}
+    };
+
+    // Spending split is intentionally not collected during setup/login.
+    // User will enter Food, Shopping, Transport and Bills from Dashboard after login.
+
+    if(data.balance < 0 || data.income < 0 || data.expense < 0 || data.investment < 0 || data.loan < 0 || data.goalTarget < 0 || data.goalSaved < 0) {
+      showToast('❌ Amounts cannot be negative'); return;
+    }
+
+    localStorage.setItem(storageKey(currentUserEmail), JSON.stringify(data));
+    applyFinancialData(data);
+    closeModal('setup');
+    showToast('✅ Your financial dashboard is ready!');
+  }
+
+  function applyFinancialData(data, selectedDateKey) {
+    data.food = Number(data.food ?? 0);
+    data.shopping = Number(data.shopping ?? 0);
+    data.transport = Number(data.transport ?? 0);
+    data.bills = Number(data.bills ?? 0);
+    const totalBalance = data.balance + data.investment - data.loan;
+    const netSavings = data.income - data.expense;
+    const goalPercent = data.goalTarget > 0 ? Math.min(100, Math.round((data.goalSaved / data.goalTarget) * 100)) : 0;
+
+    const statValues = document.querySelectorAll('#tab-overview .stat-value');
+    if(statValues[0]) statValues[0].textContent = money(totalBalance);
+    if(statValues[1]) statValues[1].textContent = money(data.investment);
+    if(statValues[2]) statValues[2].textContent = money(data.expense);
+    if(statValues[3]) statValues[3].textContent = money(data.loan);
+
+
+    // Spending Split is now entered daily by the user after login.
+    const activeDateKey = selectedDateKey || document.getElementById('dailySpendDate')?.value || todayKey();
+    const split = getSpendingForDate(data, activeDateKey);
+    data.expense = renderSpendingSplit(split, activeDateKey);
+    setDailyInputs(split, activeDateKey);
+    if(statValues[2]) statValues[2].textContent = money(data.expense);
+
+    const accountGrid = document.querySelector('#tab-accounts .accounts-grid');
+    if(accountGrid) {
+      accountGrid.innerHTML = `
+        <div class="account-card">
+          <div class="acc-top"><div><div class="acc-bank">${data.bank}</div><div class="acc-type">${data.accountType}</div></div><span class="acc-badge active">Active</span></div>
+          <div class="acc-num">•••• •••• ${data.last4}</div>
+          <div class="acc-balance">${money(data.balance)}</div>
+          <div class="acc-bar"><div class="acc-bar-fill" style="width:70%;background:var(--green)"></div></div>
+        </div>
+        <div class="account-card" style="cursor:pointer;border-style:dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;color:var(--muted);gap:8px" onclick="openModal('bank')">
+          <div style="font-size:2rem">＋</div><div style="font-size:.88rem">Link / Update Account</div>
+        </div>`;
+    }
+
+    const trackingValues = document.querySelectorAll('#tab-tracking .stat-value');
+    if(trackingValues[0]) trackingValues[0].textContent = money(data.income);
+    if(trackingValues[1]) trackingValues[1].textContent = money(data.expense);
+    if(trackingValues[2]) trackingValues[2].textContent = money(netSavings);
+    if(trackingValues[3]) trackingValues[3].textContent = money(Math.round(data.expense / 30));
+
+    // Update complete Goals tab. Removes old hardcoded sample goals.
+    const goalsGrid = document.querySelector('#tab-goals .goals-grid');
+    if(goalsGrid) {
+      goalsGrid.innerHTML = `
+        <div class="goal-card">
+          <div class="goal-top">
+            <div class="goal-icon" style="background:#6c63ff22">🎯</div>
+            <div class="goal-pct" style="color:var(--purple)">${goalPercent}%</div>
+          </div>
+          <div class="goal-name">My Savings Goal</div>
+          <div class="goal-target">Target: ${money(data.goalTarget)} • User defined goal</div>
+          <div class="goal-bar-bg"><div class="goal-bar-fill" style="width:${goalPercent}%;background:var(--purple)"></div></div>
+          <div class="goal-meta"><span>${money(data.goalSaved)} saved</span><span>${money(Math.max(data.goalTarget - data.goalSaved, 0))} to go</span></div>
+        </div>`;
+    }
+
+
+    // Update complete Loans & EMIs tab. Removes old hardcoded loan/EMI values.
+    const loansSummary = document.querySelector('#tab-loans .loans-summary');
+    if(loansSummary) {
+      const emi = data.loan > 0 ? Math.round(data.loan / 12) : 0;
+      loansSummary.innerHTML = `
+        <div class="loan-card">
+          <div class="loan-type">User Loan</div>
+          <div class="loan-bank">${data.bank}</div>
+          <div class="loan-outstanding">${money(data.loan)}</div>
+          <div class="loan-emi">EMI: ${money(emi)}/mo • User entered</div>
+          <div class="loan-progress">
+            <div class="loan-prog-label"><span>Repaid</span><span>0%</span></div>
+            <div class="loan-prog-bar"><div class="loan-prog-fill" style="width:0%"></div></div>
+          </div>
+        </div>`;
+    }
+    const emiTitle = document.querySelector('#tab-loans .section-title');
+    if(emiTitle) emiTitle.textContent = 'EMI Schedule — User Loan';
+    const emiSchedule = document.querySelector('#tab-loans .emi-schedule');
+    if(emiSchedule) {
+      const emi = data.loan > 0 ? Math.round(data.loan / 12) : 0;
+      const balanceAfterOne = Math.max(data.loan - emi, 0);
+      emiSchedule.innerHTML = `
+        <div class="emi-row" style="background:var(--surface2);font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">
+          <div class="emi-month">Month</div>
+          <div class="emi-principal">Principal</div>
+          <div class="emi-interest">Interest</div>
+          <div class="emi-balance">Balance</div>
+          <div class="emi-status">Status</div>
+        </div>
+        <div class="emi-row"><div class="emi-month">Current</div><div class="emi-principal">${money(emi)}</div><div class="emi-interest">${money(0)}</div><div class="emi-balance">${money(balanceAfterOne)}</div><div class="emi-status"><span class="status-badge ${data.loan > 0 ? 'pending' : 'paid'}">${data.loan > 0 ? 'Pending' : 'No EMI'}</span></div></div>`;
+    }
+
+    // Update the complete Investments tab also. Earlier it had hardcoded sample values.
+    const investHero = document.querySelector('#tab-investments .invest-hero');
+    if(investHero) {
+      investHero.innerHTML = `
+        <div class="invest-card">
+          <div class="invest-ticker">USER.INV</div>
+          <div class="invest-name">Your Investment Value</div>
+          <div class="invest-price">${money(data.investment)}</div>
+          <div class="invest-change ${data.investment > 0 ? 'up' : ''}">${data.investment > 0 ? '▲ User entered amount' : 'No investment added yet'}</div>
+          <div class="invest-chart"><svg viewBox="0 0 200 50" preserveAspectRatio="none"><polyline points="0,40 40,40 80,40 120,40 160,40 200,40" fill="none" stroke="#6c63ff" stroke-width="2"/></svg></div>
+        </div>
+        <div class="invest-card">
+          <div class="invest-ticker">TOTAL</div>
+          <div class="invest-name">Portfolio Total</div>
+          <div class="invest-price">${money(data.investment)}</div>
+          <div class="invest-change">Based on setup form</div>
+          <div class="invest-chart"><svg viewBox="0 0 200 50" preserveAspectRatio="none"><polyline points="0,35 40,35 80,35 120,35 160,35 200,35" fill="none" stroke="#00e5b0" stroke-width="2"/></svg></div>
+        </div>
+        <div class="invest-card">
+          <div class="invest-ticker">AVAILABLE</div>
+          <div class="invest-name">Bank Balance</div>
+          <div class="invest-price">${money(data.balance)}</div>
+          <div class="invest-change">From linked bank</div>
+          <div class="invest-chart"><svg viewBox="0 0 200 50" preserveAspectRatio="none"><polyline points="0,30 40,30 80,30 120,30 160,30 200,30" fill="none" stroke="#ffc94a" stroke-width="2"/></svg></div>
+        </div>`;
+    }
+
+    const portfolioTable = document.querySelector('#tab-investments .portfolio-table');
+    if(portfolioTable) {
+      portfolioTable.innerHTML = `
+        <div class="ptable-header">
+          <div class="pcol-asset">Asset</div>
+          <div class="pcol-qty">Qty</div>
+          <div class="pcol-avg">Avg Price</div>
+          <div class="pcol-curr">Current</div>
+          <div class="pcol-gain">P&L</div>
+          <div class="pcol-alloc">Allocation</div>
+        </div>
+        <div class="ptable-row">
+          <div class="pcol-asset"><div class="asset-name">User Investment</div><div class="asset-type">Manual Entry</div></div>
+          <div class="pcol-qty" style="text-align:right">1</div>
+          <div class="pcol-avg" style="text-align:right;font-family:DM Mono,monospace">${money(data.investment)}</div>
+          <div class="pcol-curr" style="text-align:right;font-family:DM Mono,monospace">${money(data.investment)}</div>
+          <div class="pcol-gain"><div class="gain-pos" style="text-align:right">${money(0)}<br><small>0%</small></div></div>
+          <div class="pcol-alloc" style="text-align:right"><div>${data.investment > 0 ? '100%' : '0%'}</div><div class="alloc-bar"><div class="alloc-fill" style="width:${data.investment > 0 ? 100 : 0}%"></div></div></div>
+        </div>`;
+    }
+
+    chartData.daily.income = [0, 0, data.income, 0, 0, 0, 0];
+    chartData.daily.expense = [Math.round(data.expense/7), Math.round(data.expense/8), Math.round(data.expense/6), Math.round(data.expense/10), Math.round(data.expense/9), Math.round(data.expense/5), Math.round(data.expense/12)];
+    chartData.weekly.income = [data.income, 0, 0, 0];
+    chartData.weekly.expense = [Math.round(data.expense*.25), Math.round(data.expense*.25), Math.round(data.expense*.25), Math.round(data.expense*.25)];
+    chartData.monthly.income = [data.income, data.income, data.income, data.income, data.income, data.income];
+    chartData.monthly.expense = [data.expense, data.expense, data.expense, data.expense, data.expense, data.expense];
+    buildBarChart('daily');
   }
 
   function linkBank() {
     if(!selectedBank) { showToast('❌ Please select a bank first'); return; }
+    const existing = getSavedProfile(currentUserEmail) || {};
+    const data = {
+      bank: selectedBank,
+      accountType: document.getElementById('bankType').value,
+      balance: Number(document.getElementById('setupBalance')?.value || existing.balance || 0),
+      income: existing.income ?? 0,
+      expense: existing.expense ?? 0,
+      food: existing.food ?? 0,
+      shopping: existing.shopping ?? 0,
+      transport: existing.transport ?? 0,
+      bills: existing.bills ?? 0,
+      dailySpending: existing.dailySpending || {},
+      investment: existing.investment ?? 0,
+      loan: existing.loan ?? 0,
+      goalTarget: existing.goalTarget ?? 0,
+      goalSaved: existing.goalSaved ?? 0,
+      last4: existing.last4 || '0000'
+    };
+    if(currentUserEmail) {
+      localStorage.setItem(storageKey(currentUserEmail), JSON.stringify(data));
+      applyFinancialData(data);
+    }
     closeModal('bank');
     showToast('🏦 ' + selectedBank + ' account linked successfully!');
-    if(document.getElementById('dashboard').classList.contains('active')) {
-      // update account count
-    }
   }
 
   function logout() {

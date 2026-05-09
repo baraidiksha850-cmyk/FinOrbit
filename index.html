@@ -1016,23 +1016,7 @@
     if(el) el.classList.add('active');
 
     const data = getSavedProfile(currentUserEmail) || {};
-    const summary = getPeriodSummary(data, p);
-    const labels = {D:'Today', W:'Last 7 days', M:'This month'};
-    const chartPeriodEl = document.getElementById('chartPeriod');
-    if(chartPeriodEl) chartPeriodEl.textContent = labels[p];
-
-    const statValues = document.querySelectorAll('#tab-overview .stat-value');
-    if(statValues[2]) statValues[2].textContent = money(summary.expense);
-
-    const trackingValues = document.querySelectorAll('#tab-tracking .stat-value');
-    const income = Number(data.income || 0);
-    const periodIncome = p === 'M' ? income : p === 'W' ? Math.round(income / 4) : Math.round(income / 30);
-    if(trackingValues[0]) trackingValues[0].textContent = money(periodIncome);
-    if(trackingValues[1]) trackingValues[1].textContent = money(summary.expense);
-    if(trackingValues[2]) trackingValues[2].textContent = money(periodIncome - summary.expense);
-    if(trackingValues[3]) trackingValues[3].textContent = money(p === 'D' ? summary.expense : Math.round(summary.expense / summary.days));
-
-    buildBarChart(p === 'D' ? 'daily' : p === 'W' ? 'weekly' : 'monthly');
+    renderAllPeriodBasedValues(data);
   }
 
   // ─ MODALS ─
@@ -1068,7 +1052,7 @@
   }
 
   function storageKey(email) {
-    return 'finvault_user_' + (email || 'guest').toLowerCase();
+    return 'finorbit_user_' + (email || 'guest').toLowerCase();
   }
 
   function getSavedProfile(email) {
@@ -1121,6 +1105,143 @@
     return { expense: total, days };
   }
 
+
+
+  function getPeriodLabel(period) {
+    return period === 'D' ? 'Daily' : period === 'W' ? 'Weekly' : 'Monthly';
+  }
+
+  function getPeriodMultiplier(period) {
+    // Setup form values are treated as monthly/base values.
+    // Daily = monthly / 30, Weekly = monthly / 4, Monthly = full value.
+    if(period === 'D') return 1 / 30;
+    if(period === 'W') return 1 / 4;
+    return 1;
+  }
+
+  function getPeriodAmount(value, period) {
+    return Math.round(Number(value || 0) * getPeriodMultiplier(period));
+  }
+
+  function getPeriodFinancials(data) {
+    const summary = getPeriodSummary(data, currentPeriod);
+    const periodIncome = getPeriodAmount(data.income, currentPeriod);
+    const periodInvestment = getPeriodAmount(data.investment, currentPeriod);
+    const periodLoan = getPeriodAmount(data.loan, currentPeriod);
+    const periodGoalTarget = getPeriodAmount(data.goalTarget, currentPeriod);
+    const periodGoalSaved = getPeriodAmount(data.goalSaved, currentPeriod);
+    const periodBalance = Math.round(Number(data.balance || 0) + periodInvestment - periodLoan);
+    const periodSavings = periodIncome - summary.expense;
+    const avgSpend = currentPeriod === 'D' ? summary.expense : Math.round(summary.expense / summary.days);
+
+    return {
+      label: getPeriodLabel(currentPeriod),
+      expense: summary.expense,
+      days: summary.days,
+      income: periodIncome,
+      investment: periodInvestment,
+      loan: periodLoan,
+      balance: periodBalance,
+      savings: periodSavings,
+      avgSpend,
+      goalTarget: periodGoalTarget,
+      goalSaved: periodGoalSaved
+    };
+  }
+
+  function renderAllPeriodBasedValues(data) {
+    const v = getPeriodFinancials(data || {});
+    const labels = {D:'Today', W:'Last 7 days', M:'This month'};
+    const chartPeriodEl = document.getElementById('chartPeriod');
+    if(chartPeriodEl) chartPeriodEl.textContent = labels[currentPeriod];
+
+    // Main dashboard cards
+    const statValues = document.querySelectorAll('#tab-overview .stat-value');
+    if(statValues[0]) statValues[0].textContent = money(v.balance);
+    if(statValues[1]) statValues[1].textContent = money(v.investment);
+    if(statValues[2]) statValues[2].textContent = money(v.expense);
+    if(statValues[3]) statValues[3].textContent = money(v.loan);
+
+    const statLabels = document.querySelectorAll('#tab-overview .stat-label');
+    if(statLabels[0]) statLabels[0].textContent = v.label + ' Balance View';
+    if(statLabels[1]) statLabels[1].textContent = v.label + ' Investments';
+    if(statLabels[2]) statLabels[2].textContent = v.label + ' Spend';
+    if(statLabels[3]) statLabels[3].textContent = v.label + ' Loan View';
+
+    // Tracking cards
+    const trackingValues = document.querySelectorAll('#tab-tracking .stat-value');
+    if(trackingValues[0]) trackingValues[0].textContent = money(v.income);
+    if(trackingValues[1]) trackingValues[1].textContent = money(v.expense);
+    if(trackingValues[2]) trackingValues[2].textContent = money(v.savings);
+    if(trackingValues[3]) trackingValues[3].textContent = money(v.avgSpend);
+
+    // Goals tab based on selected period
+    const goalsGrid = document.querySelector('#tab-goals .goals-grid');
+    if(goalsGrid) {
+      const goalPercent = v.goalTarget > 0 ? Math.min(100, Math.round((v.goalSaved / v.goalTarget) * 100)) : 0;
+      goalsGrid.innerHTML = `
+        <div class="goal-card">
+          <div class="goal-top">
+            <div class="goal-icon" style="background:#6c63ff22">🎯</div>
+            <div class="goal-pct" style="color:var(--purple)">${goalPercent}%</div>
+          </div>
+          <div class="goal-name">${v.label} Savings Goal View</div>
+          <div class="goal-target">Target: ${money(v.goalTarget)} • ${v.label} view</div>
+          <div class="goal-bar-bg"><div class="goal-bar-fill" style="width:${goalPercent}%;background:var(--purple)"></div></div>
+          <div class="goal-meta"><span>${money(v.goalSaved)} saved</span><span>${money(Math.max(v.goalTarget - v.goalSaved, 0))} to go</span></div>
+        </div>`;
+    }
+
+    // Investments tab based on selected period
+    const investHero = document.querySelector('#tab-investments .invest-hero');
+    if(investHero) {
+      investHero.innerHTML = `
+        <div class="invest-card">
+          <div class="invest-ticker">${v.label.toUpperCase()}</div>
+          <div class="invest-name">${v.label} Investment Value</div>
+          <div class="invest-price">${money(v.investment)}</div>
+          <div class="invest-change ${v.investment > 0 ? 'up' : ''}">${v.investment > 0 ? '▲ Based on selected period' : 'No investment added yet'}</div>
+          <div class="invest-chart"><svg viewBox="0 0 200 50" preserveAspectRatio="none"><polyline points="0,40 40,35 80,30 120,28 160,24 200,20" fill="none" stroke="#6c63ff" stroke-width="2"/></svg></div>
+        </div>
+        <div class="invest-card">
+          <div class="invest-ticker">PORTFOLIO</div>
+          <div class="invest-name">Portfolio Total</div>
+          <div class="invest-price">${money(v.investment)}</div>
+          <div class="invest-change">${v.label} calculated value</div>
+          <div class="invest-chart"><svg viewBox="0 0 200 50" preserveAspectRatio="none"><polyline points="0,35 40,32 80,28 120,25 160,23 200,18" fill="none" stroke="#00e5b0" stroke-width="2"/></svg></div>
+        </div>
+        <div class="invest-card">
+          <div class="invest-ticker">BALANCE</div>
+          <div class="invest-name">Available Balance View</div>
+          <div class="invest-price">${money(v.balance)}</div>
+          <div class="invest-change">Updated with selected period</div>
+          <div class="invest-chart"><svg viewBox="0 0 200 50" preserveAspectRatio="none"><polyline points="0,30 40,30 80,27 120,27 160,25 200,22" fill="none" stroke="#ffc94a" stroke-width="2"/></svg></div>
+        </div>`;
+    }
+
+    const portfolioTable = document.querySelector('#tab-investments .portfolio-table');
+    if(portfolioTable) {
+      portfolioTable.innerHTML = `
+        <div class="ptable-header">
+          <div class="pcol-asset">Asset</div>
+          <div class="pcol-qty">Period</div>
+          <div class="pcol-avg">Base Value</div>
+          <div class="pcol-curr">Current View</div>
+          <div class="pcol-gain">P&L</div>
+          <div class="pcol-alloc">Allocation</div>
+        </div>
+        <div class="ptable-row">
+          <div class="pcol-asset"><div class="asset-name">User Investment</div><div class="asset-type">Manual Entry</div></div>
+          <div class="pcol-qty" style="text-align:right">${v.label}</div>
+          <div class="pcol-avg" style="text-align:right;font-family:DM Mono,monospace">${money(data.investment)}</div>
+          <div class="pcol-curr" style="text-align:right;font-family:DM Mono,monospace">${money(v.investment)}</div>
+          <div class="pcol-gain"><div class="gain-pos" style="text-align:right">${money(0)}<br><small>0%</small></div></div>
+          <div class="pcol-alloc" style="text-align:right"><div>${v.investment > 0 ? '100%' : '0%'}</div><div class="alloc-bar"><div class="alloc-fill" style="width:${v.investment > 0 ? 100 : 0}%"></div></div></div>
+        </div>`;
+    }
+
+    buildBarChart(currentPeriod === 'D' ? 'daily' : currentPeriod === 'W' ? 'weekly' : 'monthly');
+  }
   function renderTransactions(data) {
     const table = document.getElementById('transactionsTable');
     if(!table) return;
@@ -1284,36 +1405,33 @@
   }
 
   function applyFinancialData(data, selectedDateKey) {
-    data.food = Number(data.food ?? 0);
-    data.shopping = Number(data.shopping ?? 0);
-    data.transport = Number(data.transport ?? 0);
-    data.bills = Number(data.bills ?? 0);
-    const totalBalance = data.balance + data.investment - data.loan;
-    const netSavings = data.income - data.expense;
-    const goalPercent = data.goalTarget > 0 ? Math.min(100, Math.round((data.goalSaved / data.goalTarget) * 100)) : 0;
+    data = data || {};
+    data.balance = Number(data.balance || 0);
+    data.income = Number(data.income || 0);
+    data.expense = Number(data.expense || 0);
+    data.investment = Number(data.investment || 0);
+    data.loan = Number(data.loan || 0);
+    data.goalTarget = Number(data.goalTarget || 0);
+    data.goalSaved = Number(data.goalSaved || 0);
+    data.food = Number(data.food || 0);
+    data.shopping = Number(data.shopping || 0);
+    data.transport = Number(data.transport || 0);
+    data.bills = Number(data.bills || 0);
+    data.dailySpending = data.dailySpending || {};
 
-    const statValues = document.querySelectorAll('#tab-overview .stat-value');
-    if(statValues[0]) statValues[0].textContent = money(totalBalance);
-    if(statValues[1]) statValues[1].textContent = money(data.investment);
-    if(statValues[2]) statValues[2].textContent = money(data.expense);
-    if(statValues[3]) statValues[3].textContent = money(data.loan);
-
-
-    // Spending Split is now entered daily by the user after login.
+    // Spending Split is entered daily by the user after login.
     const activeDateKey = selectedDateKey || document.getElementById('dailySpendDate')?.value || todayKey();
     const split = getSpendingForDate(data, activeDateKey);
-    data.expense = renderSpendingSplit(split, activeDateKey);
+    renderSpendingSplit(split, activeDateKey);
     setDailyInputs(split, activeDateKey);
-    const periodSummary = getPeriodSummary(data, currentPeriod);
-    if(statValues[2]) statValues[2].textContent = money(periodSummary.expense);
     renderTransactions(data);
 
     const accountGrid = document.querySelector('#tab-accounts .accounts-grid');
     if(accountGrid) {
       accountGrid.innerHTML = `
         <div class="account-card">
-          <div class="acc-top"><div><div class="acc-bank">${data.bank}</div><div class="acc-type">${data.accountType}</div></div><span class="acc-badge active">Active</span></div>
-          <div class="acc-num">•••• •••• ${data.last4}</div>
+          <div class="acc-top"><div><div class="acc-bank">${data.bank || 'User Bank'}</div><div class="acc-type">${data.accountType || 'Savings Account'}</div></div><span class="acc-badge active">Active</span></div>
+          <div class="acc-num">•••• •••• ${data.last4 || '0000'}</div>
           <div class="acc-balance">${money(data.balance)}</div>
           <div class="acc-bar"><div class="acc-bar-fill" style="width:70%;background:var(--green)"></div></div>
         </div>
@@ -1322,38 +1440,14 @@
         </div>`;
     }
 
-    const trackingValues = document.querySelectorAll('#tab-tracking .stat-value');
-    const periodIncome = currentPeriod === 'M' ? Number(data.income || 0) : currentPeriod === 'W' ? Math.round(Number(data.income || 0) / 4) : Math.round(Number(data.income || 0) / 30);
-    if(trackingValues[0]) trackingValues[0].textContent = money(periodIncome);
-    if(trackingValues[1]) trackingValues[1].textContent = money(periodSummary.expense);
-    if(trackingValues[2]) trackingValues[2].textContent = money(periodIncome - periodSummary.expense);
-    if(trackingValues[3]) trackingValues[3].textContent = money(currentPeriod === 'D' ? periodSummary.expense : Math.round(periodSummary.expense / periodSummary.days));
-
-    // Update complete Goals tab. Removes old hardcoded sample goals.
-    const goalsGrid = document.querySelector('#tab-goals .goals-grid');
-    if(goalsGrid) {
-      goalsGrid.innerHTML = `
-        <div class="goal-card">
-          <div class="goal-top">
-            <div class="goal-icon" style="background:#6c63ff22">🎯</div>
-            <div class="goal-pct" style="color:var(--purple)">${goalPercent}%</div>
-          </div>
-          <div class="goal-name">My Savings Goal</div>
-          <div class="goal-target">Target: ${money(data.goalTarget)} • User defined goal</div>
-          <div class="goal-bar-bg"><div class="goal-bar-fill" style="width:${goalPercent}%;background:var(--purple)"></div></div>
-          <div class="goal-meta"><span>${money(data.goalSaved)} saved</span><span>${money(Math.max(data.goalTarget - data.goalSaved, 0))} to go</span></div>
-        </div>`;
-    }
-
-
-    // Update complete Loans & EMIs tab. Removes old hardcoded loan/EMI values.
+    // Loans tab uses user-entered loan only, no demo loan values.
     const loansSummary = document.querySelector('#tab-loans .loans-summary');
     if(loansSummary) {
       const emi = data.loan > 0 ? Math.round(data.loan / 12) : 0;
       loansSummary.innerHTML = `
         <div class="loan-card">
           <div class="loan-type">User Loan</div>
-          <div class="loan-bank">${data.bank}</div>
+          <div class="loan-bank">${data.bank || 'User Bank'}</div>
           <div class="loan-outstanding">${money(data.loan)}</div>
           <div class="loan-emi">EMI: ${money(emi)}/mo • User entered</div>
           <div class="loan-progress">
@@ -1379,61 +1473,8 @@
         <div class="emi-row"><div class="emi-month">Current</div><div class="emi-principal">${money(emi)}</div><div class="emi-interest">${money(0)}</div><div class="emi-balance">${money(balanceAfterOne)}</div><div class="emi-status"><span class="status-badge ${data.loan > 0 ? 'pending' : 'paid'}">${data.loan > 0 ? 'Pending' : 'No EMI'}</span></div></div>`;
     }
 
-    // Update the complete Investments tab also. Earlier it had hardcoded sample values.
-    const investHero = document.querySelector('#tab-investments .invest-hero');
-    if(investHero) {
-      investHero.innerHTML = `
-        <div class="invest-card">
-          <div class="invest-ticker">USER.INV</div>
-          <div class="invest-name">Your Investment Value</div>
-          <div class="invest-price">${money(data.investment)}</div>
-          <div class="invest-change ${data.investment > 0 ? 'up' : ''}">${data.investment > 0 ? '▲ User entered amount' : 'No investment added yet'}</div>
-          <div class="invest-chart"><svg viewBox="0 0 200 50" preserveAspectRatio="none"><polyline points="0,40 40,40 80,40 120,40 160,40 200,40" fill="none" stroke="#6c63ff" stroke-width="2"/></svg></div>
-        </div>
-        <div class="invest-card">
-          <div class="invest-ticker">TOTAL</div>
-          <div class="invest-name">Portfolio Total</div>
-          <div class="invest-price">${money(data.investment)}</div>
-          <div class="invest-change">Based on setup form</div>
-          <div class="invest-chart"><svg viewBox="0 0 200 50" preserveAspectRatio="none"><polyline points="0,35 40,35 80,35 120,35 160,35 200,35" fill="none" stroke="#00e5b0" stroke-width="2"/></svg></div>
-        </div>
-        <div class="invest-card">
-          <div class="invest-ticker">AVAILABLE</div>
-          <div class="invest-name">Bank Balance</div>
-          <div class="invest-price">${money(data.balance)}</div>
-          <div class="invest-change">From linked bank</div>
-          <div class="invest-chart"><svg viewBox="0 0 200 50" preserveAspectRatio="none"><polyline points="0,30 40,30 80,30 120,30 160,30 200,30" fill="none" stroke="#ffc94a" stroke-width="2"/></svg></div>
-        </div>`;
-    }
-
-    const portfolioTable = document.querySelector('#tab-investments .portfolio-table');
-    if(portfolioTable) {
-      portfolioTable.innerHTML = `
-        <div class="ptable-header">
-          <div class="pcol-asset">Asset</div>
-          <div class="pcol-qty">Qty</div>
-          <div class="pcol-avg">Avg Price</div>
-          <div class="pcol-curr">Current</div>
-          <div class="pcol-gain">P&L</div>
-          <div class="pcol-alloc">Allocation</div>
-        </div>
-        <div class="ptable-row">
-          <div class="pcol-asset"><div class="asset-name">User Investment</div><div class="asset-type">Manual Entry</div></div>
-          <div class="pcol-qty" style="text-align:right">1</div>
-          <div class="pcol-avg" style="text-align:right;font-family:DM Mono,monospace">${money(data.investment)}</div>
-          <div class="pcol-curr" style="text-align:right;font-family:DM Mono,monospace">${money(data.investment)}</div>
-          <div class="pcol-gain"><div class="gain-pos" style="text-align:right">${money(0)}<br><small>0%</small></div></div>
-          <div class="pcol-alloc" style="text-align:right"><div>${data.investment > 0 ? '100%' : '0%'}</div><div class="alloc-bar"><div class="alloc-fill" style="width:${data.investment > 0 ? 100 : 0}%"></div></div></div>
-        </div>`;
-    }
-
-    chartData.daily.income = [0, 0, data.income, 0, 0, 0, 0];
-    chartData.daily.expense = [Math.round(data.expense/7), Math.round(data.expense/8), Math.round(data.expense/6), Math.round(data.expense/10), Math.round(data.expense/9), Math.round(data.expense/5), Math.round(data.expense/12)];
-    chartData.weekly.income = [data.income, 0, 0, 0];
-    chartData.weekly.expense = [Math.round(data.expense*.25), Math.round(data.expense*.25), Math.round(data.expense*.25), Math.round(data.expense*.25)];
-    chartData.monthly.income = [data.income, data.income, data.income, data.income, data.income, data.income];
-    chartData.monthly.expense = [data.expense, data.expense, data.expense, data.expense, data.expense, data.expense];
-    buildBarChart('daily');
+    // Apply selected Daily / Weekly / Monthly period to Dashboard, Investments, Goals, and Tracking.
+    renderAllPeriodBasedValues(data);
   }
 
   function linkBank() {

@@ -428,6 +428,8 @@
   const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
   const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
 
+  // Important: No login session is saved. OTP is required again after every logout/page refresh.
+
   if (EMAILJS_PUBLIC_KEY !== "YOUR_PUBLIC_KEY") {
     emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
   }
@@ -922,23 +924,24 @@
 <div class="modal-overlay" id="modal-login">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('login')">×</button>
-    <h2>Welcome Back</h2>
-    <p class="sub">Sign in to your FinOrbit account</p>
-    <button class="social-btn" onclick="googleSignUp()">
-      <svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-      Continue with Google
-    </button>
-    <div class="divider">or sign in with email verification code</div>
-    <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="you@gmail.com"></div>
+    <h2>Login with Email Verification</h2>
+    <p class="sub">A new 6-digit verification code is required every time you login.</p>
+
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="loginEmail" placeholder="you@gmail.com" autocomplete="email">
+    </div>
+
     <div id="otpDemoNote" style="display:none;background:#ffc94a22;border:1px solid #ffc94a55;color:var(--yellow);padding:10px 12px;border-radius:10px;font-size:.82rem;margin-bottom:12px"></div>
+
     <button class="full-btn" id="sendOtpBtn" onclick="sendLoginCode()">Send Verification Code →</button>
 
     <div id="otpArea" style="display:none;margin-top:16px">
       <div class="form-group">
         <label>Enter Verification Code</label>
-        <input type="text" id="loginOtp" placeholder="6-digit code" maxlength="6">
+        <input type="text" id="loginOtp" placeholder="Enter 6 digit code" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
       </div>
-      <button class="full-btn" onclick="verifyLoginCode()">Verify & Sign In →</button>
+      <button class="full-btn" onclick="verifyLoginCode()">Verify & Login →</button>
       <div class="switch-auth"><a onclick="sendLoginCode()">Resend code</a></div>
     </div>
 
@@ -1419,6 +1422,7 @@
         showToast('⚠️ Demo code generated. Add EmailJS keys to send real email.');
       }
 
+      document.getElementById('loginOtp').value = '';
       document.getElementById('otpArea').style.display = 'block';
     } catch (error) {
       console.error(error);
@@ -1606,9 +1610,26 @@
   }
 
   function logout() {
+    // Clear only login/OTP session data. Financial data remains saved in localStorage.
+    currentUserEmail = '';
+    sessionStorage.removeItem('finorbit_pending_otp');
+
+    const loginEmail = document.getElementById('loginEmail');
+    const loginOtp = document.getElementById('loginOtp');
+    const otpArea = document.getElementById('otpArea');
+    const otpDemoNote = document.getElementById('otpDemoNote');
+
+    if (loginEmail) loginEmail.value = '';
+    if (loginOtp) loginOtp.value = '';
+    if (otpArea) otpArea.style.display = 'none';
+    if (otpDemoNote) {
+      otpDemoNote.style.display = 'none';
+      otpDemoNote.innerHTML = '';
+    }
+
     document.getElementById('dashboard').classList.remove('active');
     document.getElementById('landing').classList.add('active');
-    showToast('👋 Logged out. See you soon!');
+    showToast('👋 Logged out. Please verify email again for next login.');
   }
 
   // ─ TOAST ─

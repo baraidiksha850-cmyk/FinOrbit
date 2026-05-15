@@ -1395,200 +1395,126 @@ emailjs.init({
   }
 
   async function sendSignupCode() {
-  const name = (document.getElementById('signupName').value || 'User').trim();
-  const email = (document.getElementById('signupEmail').value || '').trim().toLowerCase();
-  const password = (document.getElementById('signupPass').value || '').trim();
+    const name = (document.getElementById('signupName').value || 'User').trim();
+    const email = (document.getElementById('signupEmail').value || '').trim().toLowerCase();
+    const password = (document.getElementById('signupPass').value || '').trim();
+    const income = Number(document.getElementById('signupIncome').value || 0);
 
-  if (!name) {
-    showToast('❌ Please enter your full name');
-    return;
+    if (!name) { showToast('❌ Enter your full name'); return; }
+    if (!email.includes('@')) { showToast('❌ Enter a valid email address'); return; }
+    if (password.length < 6) { showToast('❌ Password must be at least 6 characters'); return; }
+
+    const code = generateOtp();
+    const otpData = { name, email, password, income, code, expiresAt: Date.now() + (5 * 60 * 1000) };
+    sessionStorage.setItem('finorbit_signup_otp', JSON.stringify(otpData));
+
+    const sendBtn = document.getElementById('sendSignupOtpBtn');
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending code...';
+
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: email,
+        user_email: email,
+        user_name: name,
+        verification_code: code,
+        code: code
+      });
+
+      document.getElementById('signupOtp').value = '';
+      document.getElementById('signupOtpArea').style.display = 'block';
+      showToast('✅ Verification code sent to ' + email);
+    } catch (error) {
+      console.error('Signup EmailJS error:', error);
+      alert('Signup EmailJS error:\n\n' + JSON.stringify(error, null, 2));
+      showToast('❌ ' + (error?.text || error?.message || 'EmailJS failed'));
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send Verification Code →';
+    }
   }
 
-  if (!email.includes('@')) {
-    showToast('❌ Enter a valid email address');
-    return;
-  }
+  function verifySignupCode() {
+    const enteredCode = (document.getElementById('signupOtp').value || '').trim();
+    const otpData = JSON.parse(sessionStorage.getItem('finorbit_signup_otp') || 'null');
 
-  if (password.length < 6) {
-    showToast('❌ Password must be at least 6 characters');
-    return;
-  }
+    if (!otpData) { showToast('❌ Please request a verification code first.'); return; }
+    if (Date.now() > otpData.expiresAt) {
+      sessionStorage.removeItem('finorbit_signup_otp');
+      showToast('❌ Code expired. Please resend code.');
+      return;
+    }
+    if (enteredCode !== otpData.code) { showToast('❌ Invalid verification code.'); return; }
 
-  const code = generateOtp();
-
-  const otpData = {
-    name,
-    email,
-    password,
-    code,
-    expiresAt: Date.now() + (5 * 60 * 1000)
-  };
-
-  sessionStorage.setItem('finorbit_signup_otp', JSON.stringify(otpData));
-
-  const sendBtn = document.getElementById('sendSignupOtpBtn');
-  sendBtn.disabled = true;
-  sendBtn.textContent = 'Sending code...';
-
-  try {
-    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      to_email: email,
-      user_email: email,
-      user_name: name,
-      verification_code: code,
-      code: code
-    });
-
-    document.getElementById('signupOtp').value = '';
-    document.getElementById('signupOtpArea').style.display = 'block';
-
-    showToast('✅ Verification code sent to ' + email);
-
-  } catch (error) {
-    console.error("Signup EmailJS error:", error);
-    alert(
-      "Signup EmailJS error:\\n\\n" +
-      JSON.stringify(error, null, 2)
-    );
-    showToast(
-      "❌ " +
-      (
-        error?.text ||
-        error?.message ||
-        "EmailJS failed. Check EmailJS template To Email = {{to_email}}"
-      )
-    );
-  } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = 'Send Verification Code →';
-  }
-}
-
-function verifySignupCode() {
-  const enteredCode = (document.getElementById('signupOtp').value || '').trim();
-  const otpData = JSON.parse(sessionStorage.getItem('finorbit_signup_otp') || 'null');
-
-  if (!otpData) {
-    showToast('❌ Please request a verification code first.');
-    return;
-  }
-
-  if (Date.now() > otpData.expiresAt) {
     sessionStorage.removeItem('finorbit_signup_otp');
-    showToast('❌ Code expired. Please resend code.');
-    return;
+    localStorage.setItem('finorbit_last_signup', JSON.stringify({
+      name: otpData.name,
+      email: otpData.email,
+      password: otpData.password,
+      income: otpData.income
+    }));
+    closeModal('signup');
+    doEnterDashboard(otpData.name, otpData.email);
   }
 
-  if (enteredCode !== otpData.code) {
-    showToast('❌ Invalid verification code.');
-    return;
+  async function sendLoginCode() {
+    const email = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
+
+    if (!email.includes('@')) { showToast('❌ Enter a valid email address'); return; }
+
+    const code = generateOtp();
+    const name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const otpData = { email, code, name, expiresAt: Date.now() + (5 * 60 * 1000) };
+    sessionStorage.setItem('finorbit_pending_otp', JSON.stringify(otpData));
+
+    const sendBtn = document.getElementById('sendOtpBtn');
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending code...';
+
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: email,
+        user_email: email,
+        user_name: name,
+        verification_code: code,
+        code: code
+      });
+
+      document.getElementById('otpDemoNote').style.display = 'none';
+      document.getElementById('loginOtp').value = '';
+      document.getElementById('otpArea').style.display = 'block';
+      showToast('✅ Verification code sent to ' + email);
+    } catch (error) {
+      console.error('Login EmailJS error:', error);
+      alert('Login EmailJS error:\n\n' + JSON.stringify(error, null, 2));
+      showToast('❌ ' + (error?.text || error?.message || 'EmailJS failed'));
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send Verification Code →';
+    }
   }
 
-  localStorage.setItem('finorbit_registered_user', JSON.stringify({
-    name: otpData.name,
-    email: otpData.email,
-    password: otpData.password
-  }));
+  function verifyLoginCode() {
+    const enteredCode = (document.getElementById('loginOtp').value || '').trim();
+    const otpData = JSON.parse(sessionStorage.getItem('finorbit_pending_otp') || 'null');
 
-  sessionStorage.removeItem('finorbit_signup_otp');
-  closeModal('signup');
-  doEnterDashboard(otpData.name, otpData.email);
-  showToast('✅ Account created successfully');
-}
+    if(!otpData) { showToast('❌ Please request a verification code first.'); return; }
+    if(Date.now() > otpData.expiresAt) {
+      sessionStorage.removeItem('finorbit_pending_otp');
+      showToast('❌ Code expired. Please resend code.');
+      return;
+    }
+    if(enteredCode !== otpData.code) { showToast('❌ Invalid verification code.'); return; }
 
-async function sendLoginCode() {
-  const email = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
-
-  if (!email.includes('@')) {
-    showToast('❌ Enter a valid email address');
-    return;
-  }
-
-  const registeredUser = JSON.parse(localStorage.getItem('finorbit_registered_user') || 'null');
-  const name = registeredUser && registeredUser.email === email
-    ? registeredUser.name
-    : email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-
-  const code = generateOtp();
-
-  const otpData = {
-    email,
-    code,
-    name,
-    expiresAt: Date.now() + (5 * 60 * 1000)
-  };
-
-  sessionStorage.setItem('finorbit_pending_otp', JSON.stringify(otpData));
-
-  const sendBtn = document.getElementById('sendOtpBtn');
-  sendBtn.disabled = true;
-  sendBtn.textContent = 'Sending code...';
-
-  try {
-    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      to_email: email,
-      user_email: email,
-      user_name: name,
-      verification_code: code,
-      code: code
-    });
-
-    const note = document.getElementById('otpDemoNote');
-    if (note) note.style.display = 'none';
-
-    document.getElementById('loginOtp').value = '';
-    document.getElementById('otpArea').style.display = 'block';
-
-    showToast('✅ Verification code sent to ' + email);
-
-  } catch (error) {
-    console.error("Login EmailJS error:", error);
-    alert(
-      "Login EmailJS error:\\n\\n" +
-      JSON.stringify(error, null, 2)
-    );
-    showToast(
-      "❌ " +
-      (
-        error?.text ||
-        error?.message ||
-        "EmailJS failed. Check EmailJS template To Email = {{to_email}}"
-      )
-    );
-  } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = 'Send Verification Code →';
-  }
-}
-
-function verifyLoginCode() {
-  const enteredCode = (document.getElementById('loginOtp').value || '').trim();
-  const otpData = JSON.parse(sessionStorage.getItem('finorbit_pending_otp') || 'null');
-
-  if (!otpData) {
-    showToast('❌ Please request a verification code first.');
-    return;
-  }
-
-  if (Date.now() > otpData.expiresAt) {
     sessionStorage.removeItem('finorbit_pending_otp');
-    showToast('❌ Code expired. Please resend code.');
-    return;
+    closeModal('login');
+    doEnterDashboard(otpData.name, otpData.email);
   }
 
-  if (enteredCode !== otpData.code) {
-    showToast('❌ Invalid verification code.');
-    return;
+  // Keeping old function name in case any old button still calls it
+  function doLogin() {
+    sendLoginCode();
   }
-
-  sessionStorage.removeItem('finorbit_pending_otp');
-  closeModal('login');
-  doEnterDashboard(otpData.name, otpData.email);
-}
-
-function doLogin() {
-  sendLoginCode();
-}
 
   function doEnterDashboard(name, email) {
     currentUserEmail = email;

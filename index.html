@@ -455,6 +455,85 @@ emailjs.init({
   </div>
 </div>
 
+
+<!-- ══ FIRST TIME SETUP PAGE ══ -->
+<div id="setupPage" class="screen">
+  <div style="width:100%;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px;background:radial-gradient(ellipse 80% 60% at 50% 0%, #1a1050 0%, var(--bg) 70%);">
+    <div class="modal" style="max-width:760px;width:100%;display:block;">
+      <h2>Set Your Financial Details</h2>
+      <p class="sub">Please fill your own monthly expenses, investments, goals and bank details before opening the dashboard.</p>
+      <div class="setup-note">This data is saved only in this browser using localStorage.</div>
+
+      <div class="setup-grid">
+        <div class="form-group">
+          <label>Bank Name</label>
+          <select id="firstSetupBank">
+            <option>State Bank of India</option>
+            <option>HDFC Bank</option>
+            <option>ICICI Bank</option>
+            <option>Axis Bank</option>
+            <option>Kotak Bank</option>
+            <option>Bank of Baroda</option>
+            <option>Other Bank</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Account Type</label>
+          <select id="firstSetupAccountType">
+            <option>Savings Account</option>
+            <option>Current Account</option>
+            <option>Salary Account</option>
+            <option>Fixed Deposit</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Total Bank Balance ₹</label>
+          <input type="number" id="firstSetupBalance" placeholder="50000" min="0">
+        </div>
+
+        <div class="form-group">
+          <label>Monthly Income ₹</label>
+          <input type="number" id="firstSetupIncome" placeholder="30000" min="0">
+        </div>
+
+        <div class="form-group">
+          <label>Monthly Expense ₹</label>
+          <input type="number" id="firstSetupExpense" placeholder="12000" min="0">
+        </div>
+
+        <div class="form-group">
+          <label>Investments Amount ₹</label>
+          <input type="number" id="firstSetupInvestment" placeholder="10000" min="0">
+        </div>
+
+        <div class="form-group">
+          <label>Loan Outstanding ₹</label>
+          <input type="number" id="firstSetupLoan" placeholder="0" min="0">
+        </div>
+
+        <div class="form-group">
+          <label>Goal Target ₹</label>
+          <input type="number" id="firstSetupGoalTarget" placeholder="100000" min="0">
+        </div>
+
+        <div class="form-group">
+          <label>Goal Saved ₹</label>
+          <input type="number" id="firstSetupGoalSaved" placeholder="25000" min="0">
+        </div>
+
+        <div class="form-group">
+          <label>Account Last 4 Digits</label>
+          <input type="text" id="firstSetupLast4" placeholder="1234" maxlength="4">
+        </div>
+      </div>
+
+      <button class="full-btn" onclick="saveFirstSetupAndOpenDashboard()">Save & Open Dashboard →</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ DASHBOARD ══ -->
 <div id="dashboard" class="screen">
   <!-- Sidebar -->
@@ -1574,24 +1653,74 @@ function doEnterDashboard(name, email, forceSetup = false) {
   document.getElementById('userName').textContent = name;
   document.getElementById('userEmail').textContent = email;
   document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
-  document.getElementById('landing').classList.remove('active');
-  document.getElementById('dashboard').classList.add('active');
 
   const saved = getSavedProfile(email);
 
-  // For a newly created account, always show the setup/details page first.
-  // For login, show it only if no saved dashboard data exists for that email.
+  // New users must fill the setup page before dashboard opens.
+  // Login users without saved data will also be sent to setup page.
   if (forceSetup || !saved) {
-    setTimeout(() => {
-      openModal('setup');
-      showToast('Please fill your bank, monthly expenses, investments and goals first.');
-    }, 150);
+    document.getElementById('landing').classList.remove('active');
+    document.getElementById('dashboard').classList.remove('active');
+    document.getElementById('setupPage').classList.add('active');
+
+    const incomeFromSignup = Number(document.getElementById('signupIncome')?.value || 0);
+    const firstIncome = document.getElementById('firstSetupIncome');
+    if (firstIncome && incomeFromSignup) firstIncome.value = incomeFromSignup;
+
+    showToast('Please fill your financial details first.');
     return;
   }
+
+  document.getElementById('landing').classList.remove('active');
+  document.getElementById('setupPage').classList.remove('active');
+  document.getElementById('dashboard').classList.add('active');
 
   applyFinancialData(saved);
   showToast('Welcome back, ' + name.split(' ')[0] + '! 🎉');
 }
+
+
+  function saveFirstSetupAndOpenDashboard() {
+    const data = {
+      bank: document.getElementById('firstSetupBank').value,
+      accountType: document.getElementById('firstSetupAccountType').value,
+      balance: Number(document.getElementById('firstSetupBalance').value || 0),
+      income: Number(document.getElementById('firstSetupIncome').value || 0),
+      expense: Number(document.getElementById('firstSetupExpense').value || 0),
+      investment: Number(document.getElementById('firstSetupInvestment').value || 0),
+      loan: Number(document.getElementById('firstSetupLoan').value || 0),
+      goalTarget: Number(document.getElementById('firstSetupGoalTarget').value || 0),
+      goalSaved: Number(document.getElementById('firstSetupGoalSaved').value || 0),
+      last4: (document.getElementById('firstSetupLast4').value || '0000').slice(-4),
+      food: 0,
+      shopping: 0,
+      transport: 0,
+      bills: 0,
+      dailySpending: {}
+    };
+
+    if (
+      data.balance < 0 ||
+      data.income < 0 ||
+      data.expense < 0 ||
+      data.investment < 0 ||
+      data.loan < 0 ||
+      data.goalTarget < 0 ||
+      data.goalSaved < 0
+    ) {
+      showToast('❌ Amounts cannot be negative');
+      return;
+    }
+
+    localStorage.setItem(storageKey(currentUserEmail), JSON.stringify(data));
+    applyFinancialData(data);
+
+    document.getElementById('setupPage').classList.remove('active');
+    document.getElementById('landing').classList.remove('active');
+    document.getElementById('dashboard').classList.add('active');
+
+    showToast('✅ Your financial dashboard is ready!');
+  }
 
   function saveSetup() {
     const data = {

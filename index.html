@@ -106,7 +106,8 @@
   .modal-overlay.open { display: flex; }
   .modal {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 36px; width: 90%; max-width: 440px;
+    border-radius: 20px; padding: 36px; width: 90%; max-width: 720px;
+    max-height: 90vh; overflow-y: auto;
     position: relative; animation: modalIn .35s ease;
   }
   @keyframes modalIn { from{opacity:0;transform:scale(.93) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
@@ -407,37 +408,6 @@
     font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif;
   }
 
-
-
-  /* Separate first-time setup page */
-  #setupScreen {
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 36px 18px;
-    background: radial-gradient(ellipse 80% 60% at 50% 0%, #1a1050 0%, var(--bg) 70%);
-  }
-  .setup-page-card {
-    width: 100%;
-    max-width: 780px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 22px;
-    padding: 30px;
-    box-shadow: 0 20px 60px #0008;
-  }
-  .setup-page-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.8rem;
-    font-weight: 800;
-    margin-bottom: 6px;
-  }
-  .setup-page-sub {
-    color: var(--muted);
-    margin-bottom: 18px;
-    font-size: .92rem;
-  }
-
   /* Responsive */
   @media(max-width: 900px) {
     .sidebar { transform: translateX(-100%); }
@@ -483,37 +453,6 @@ emailjs.init({
     <div class="pill"><span class="dot" style="background:var(--blue)"></span> Loan Manager</div>
     <div class="pill"><span class="dot" style="background:var(--red)"></span> Expense Analytics</div>
     <div class="pill"><span class="dot" style="background:var(--accent2)"></span> Multi-Bank Support</div>
-  </div>
-</div>
-
-<!-- ══ FIRST-TIME SETUP PAGE ══ -->
-<div id="setupScreen" class="screen">
-  <div class="setup-page-card">
-    <div class="logo-badge" style="margin-bottom:18px"><span>💰</span> FINORBIT</div>
-    <h2 class="setup-page-title">Set Your Financial Details</h2>
-    <p class="setup-page-sub">Before opening your dashboard, enter your own bank balance, monthly expenses, investments, loans and goals.</p>
-    <div class="setup-note">This data is saved only in this browser using localStorage for your project demo.</div>
-
-    <div class="setup-grid">
-      <div class="form-group"><label>Bank Name</label>
-        <select id="setupBank">
-          <option>State Bank of India</option><option>HDFC Bank</option><option>ICICI Bank</option><option>Axis Bank</option><option>Kotak Bank</option><option>Bank of Baroda</option><option>Other Bank</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Account Type</label>
-        <select id="setupAccountType"><option>Savings Account</option><option>Current Account</option><option>Salary Account</option><option>Fixed Deposit</option></select>
-      </div>
-      <div class="form-group"><label>Total Bank Balance ₹</label><input type="number" id="setupBalance" placeholder="50000" min="0"></div>
-      <div class="form-group"><label>Monthly Income ₹</label><input type="number" id="setupIncome" placeholder="30000" min="0"></div>
-      <div class="form-group"><label>Monthly Expense ₹</label><input type="number" id="setupExpense" placeholder="12000" min="0"></div>
-      <div class="form-group"><label>Investments Amount ₹</label><input type="number" id="setupInvestment" placeholder="10000" min="0"></div>
-      <div class="form-group"><label>Loan Outstanding ₹</label><input type="number" id="setupLoan" placeholder="0" min="0"></div>
-      <div class="form-group"><label>Goal Target ₹</label><input type="number" id="setupGoalTarget" placeholder="100000" min="0"></div>
-      <div class="form-group"><label>Goal Saved ₹</label><input type="number" id="setupGoalSaved" placeholder="25000" min="0"></div>
-      <div class="form-group"><label>Account Last 4 Digits</label><input type="text" id="setupLast4" placeholder="1234" maxlength="4"></div>
-    </div>
-
-    <button class="full-btn" onclick="saveSetup()">Save & Open Dashboard →</button>
   </div>
 </div>
 
@@ -563,7 +502,7 @@ emailjs.init({
         </div>
       </div>
       <div class="topbar-right">
-        <button class="btn-secondary" style="padding:9px 14px;font-size:.82rem" onclick="openSetupEditor()">Edit Amounts</button>
+        <button class="btn-secondary" style="padding:9px 14px;font-size:.82rem" onclick="openModal('setup')">Edit Amounts</button>
         <div class="period-toggle" id="mainPeriodToggle">
           <button class="period-btn active" onclick="setPeriod('D',this)">D</button>
           <button class="period-btn" onclick="setPeriod('W',this)">W</button>
@@ -965,30 +904,52 @@ emailjs.init({
   <div class="modal">
     <button class="modal-close" onclick="closeModal('signup')">×</button>
     <h2>Create Account</h2>
-    <p class="sub">Sign up to start managing your finances</p>
+    <p class="sub">Fill your account and financial details first. These values will show in the left panel and dashboard.</p>
     <button class="social-btn" onclick="googleSignUp()">
       <svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Continue with Google
     </button>
+
     <div class="divider">or sign up with email</div>
-    <div class="form-group"><label>Full Name</label><input type="text" id="signupName" placeholder="Rahul Sharma"></div>
-    <div class="form-group"><label>Gmail Address</label><input type="email" id="signupEmail" placeholder="rahul@gmail.com"></div>
-    <div class="form-group"><label>Password</label><input type="password" id="signupPass" placeholder="Min 8 characters"></div>
-    <div class="form-group"><label>Monthly Income (₹)</label><input type="number" id="signupIncome" placeholder="50000"></div>
+
+    <div class="setup-note">Fill all details while creating account. After OTP verification, dashboard will open with these saved values.</div>
+
+    <div class="setup-grid">
+      <div class="form-group"><label>Full Name</label><input type="text" id="signupName" placeholder="Your name"></div>
+      <div class="form-group"><label>Gmail Address</label><input type="email" id="signupEmail" placeholder="yourname@gmail.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="signupPass" placeholder="Min 8 characters"></div>
+
+      <div class="form-group"><label>Bank Name</label>
+        <select id="signupBank">
+          <option>State Bank of India</option><option>HDFC Bank</option><option>ICICI Bank</option><option>Axis Bank</option><option>Kotak Bank</option><option>Bank of Baroda</option><option>Other Bank</option>
+        </select>
+      </div>
+
+      <div class="form-group"><label>Account Type</label>
+        <select id="signupAccountType"><option>Savings Account</option><option>Current Account</option><option>Salary Account</option><option>Fixed Deposit</option></select>
+      </div>
+
+      <div class="form-group"><label>Total Bank Balance ₹</label><input type="number" id="signupBalance" placeholder="50000" min="0"></div>
+      <div class="form-group"><label>Monthly Income ₹</label><input type="number" id="signupIncome" placeholder="30000" min="0"></div>
+      <div class="form-group"><label>Monthly Expense ₹</label><input type="number" id="signupExpense" placeholder="12000" min="0"></div>
+      <div class="form-group"><label>Investments Amount ₹</label><input type="number" id="signupInvestment" placeholder="10000" min="0"></div>
+      <div class="form-group"><label>Loan Outstanding ₹</label><input type="number" id="signupLoan" placeholder="0" min="0"></div>
+      <div class="form-group"><label>Goal Target ₹</label><input type="number" id="signupGoalTarget" placeholder="100000" min="0"></div>
+      <div class="form-group"><label>Goal Saved ₹</label><input type="number" id="signupGoalSaved" placeholder="25000" min="0"></div>
+      <div class="form-group"><label>Account Last 4 Digits</label><input type="text" id="signupLast4" placeholder="1234" maxlength="4"></div>
+    </div>
+
     <button class="full-btn" id="sendSignupOtpBtn" onclick="sendSignupCode()">Send Verification Code →</button>
-    
+
     <div id="signupOtpArea" style="display:none;margin-top:16px">
+      <div class="form-group">
+        <label>Enter Verification Code</label>
+        <input type="text" id="signupOtp" placeholder="Enter 6 digit code" maxlength="6">
+      </div>
 
-  <div class="form-group">
-    <label>Enter Verification Code</label>
-    <input type="text" id="signupOtp" placeholder="Enter 6 digit code" maxlength="6">
-  </div>
+      <button class="full-btn" onclick="verifySignupCode()">Verify & Create Account →</button>
+    </div>
 
-  <button class="full-btn" onclick="verifySignupCode()">
-    Verify & Create Account →
-  </button>
-
-</div>
     <div class="switch-auth">Already have an account? <a onclick="switchModal('signup','login')">Sign in</a></div>
   </div>
 </div>
@@ -1049,6 +1010,35 @@ emailjs.init({
 </div>
 
 
+
+<!-- First Login Financial Setup -->
+<div class="modal-overlay" id="modal-setup">
+  <div class="modal" style="max-width:640px">
+    <button class="modal-close" onclick="closeModal('setup')">×</button>
+    <h2>Set Your Financial Details</h2>
+    <p class="sub">Enter your own bank and amounts. These values will appear in your dashboard.</p>
+    <div class="setup-note">This is for your project demo only. The data is saved in this browser using localStorage.</div>
+    <div class="setup-grid">
+      <div class="form-group"><label>Bank Name</label>
+        <select id="setupBank">
+          <option>State Bank of India</option><option>HDFC Bank</option><option>ICICI Bank</option><option>Axis Bank</option><option>Kotak Bank</option><option>Bank of Baroda</option><option>Other Bank</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Account Type</label>
+        <select id="setupAccountType"><option>Savings Account</option><option>Current Account</option><option>Salary Account</option><option>Fixed Deposit</option></select>
+      </div>
+      <div class="form-group"><label>Total Bank Balance ₹</label><input type="number" id="setupBalance" placeholder="50000" min="0"></div>
+      <div class="form-group"><label>Monthly Income ₹</label><input type="number" id="setupIncome" placeholder="30000" min="0"></div>
+      <div class="form-group"><label>Monthly Expense ₹</label><input type="number" id="setupExpense" placeholder="12000" min="0"></div>
+      <div class="form-group"><label>Investments Amount ₹</label><input type="number" id="setupInvestment" placeholder="10000" min="0"></div>
+      <div class="form-group"><label>Loan Outstanding ₹</label><input type="number" id="setupLoan" placeholder="0" min="0"></div>
+      <div class="form-group"><label>Goal Target ₹</label><input type="number" id="setupGoalTarget" placeholder="100000" min="0"></div>
+      <div class="form-group"><label>Goal Saved ₹</label><input type="number" id="setupGoalSaved" placeholder="25000" min="0"></div>
+      <div class="form-group"><label>Account Last 4 Digits</label><input type="text" id="setupLast4" placeholder="1234" maxlength="4"></div>
+    </div>
+    <button class="full-btn" onclick="saveSetup()">Save & Open Dashboard →</button>
+  </div>
+</div>
 
 <!-- Toast -->
 <div class="toast" id="toast">✅ <span id="toastMsg"></span></div>
@@ -1427,11 +1417,41 @@ emailjs.init({
   }
 
   async function sendSignupCode() {
-  const name = document.getElementById('signupName').value || 'User';
+  const name = (document.getElementById('signupName').value || '').trim();
   const email = (document.getElementById('signupEmail').value || '').trim().toLowerCase();
+  const password = document.getElementById('signupPass').value || '';
+
+  if (!name) {
+    showToast('❌ Enter your full name');
+    return;
+  }
 
   if (!email.includes('@')) {
     showToast('❌ Enter a valid email address');
+    return;
+  }
+
+  if (password.length < 8) {
+    showToast('❌ Password must be minimum 8 characters');
+    return;
+  }
+
+  const requiredAmountIds = ['signupBalance','signupIncome','signupExpense','signupInvestment','signupLoan','signupGoalTarget','signupGoalSaved'];
+  for (const id of requiredAmountIds) {
+    const el = document.getElementById(id);
+    if (!el || el.value === '') {
+      showToast('❌ Please fill all financial details before sending OTP');
+      return;
+    }
+    if (Number(el.value) < 0) {
+      showToast('❌ Amounts cannot be negative');
+      return;
+    }
+  }
+
+  const last4 = (document.getElementById('signupLast4').value || '').trim();
+  if (!/^\d{4}$/.test(last4)) {
+    showToast('❌ Enter exactly 4 digits for account last 4 digits');
     return;
   }
 
@@ -1466,34 +1486,33 @@ emailjs.init({
 
     showToast('✅ Verification code sent to ' + email);
 
-  }  catch (error) {
+  } catch (error) {
 
-  console.error("Login EmailJS error:", error);
+    console.error("Signup EmailJS error:", error);
 
-  alert(
-    "Login EmailJS error:\n\n" +
-    JSON.stringify(error, null, 2)
-  );
+    alert(
+      "Signup EmailJS error:\n\n" +
+      JSON.stringify(error, null, 2)
+    );
 
-  showToast(
-    "❌ " +
-    (
-      error?.text ||
-      error?.message ||
-      "EmailJS failed"
-    )
-  );
+    showToast(
+      "❌ " +
+      (
+        error?.text ||
+        error?.message ||
+        "EmailJS failed"
+      )
+    );
 
-} finally {
+  } finally {
 
-  if (sendBtn) {
-    sendBtn.disabled = false;
-    sendBtn.textContent = 'Send Verification Code →';
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send Verification Code →';
+    }
+
   }
-
 }
-  }
-
 
 function verifySignupCode() {
   const enteredCode = (document.getElementById('signupOtp').value || '').trim();
@@ -1515,10 +1534,37 @@ function verifySignupCode() {
     return;
   }
 
+  const data = {
+    bank: document.getElementById('signupBank').value,
+    accountType: document.getElementById('signupAccountType').value,
+    balance: Number(document.getElementById('signupBalance').value || 0),
+    income: Number(document.getElementById('signupIncome').value || 0),
+    expense: Number(document.getElementById('signupExpense').value || 0),
+    investment: Number(document.getElementById('signupInvestment').value || 0),
+    loan: Number(document.getElementById('signupLoan').value || 0),
+    goalTarget: Number(document.getElementById('signupGoalTarget').value || 0),
+    goalSaved: Number(document.getElementById('signupGoalSaved').value || 0),
+    last4: (document.getElementById('signupLast4').value || '0000').slice(-4),
+    food: 0,
+    shopping: 0,
+    transport: 0,
+    bills: 0,
+    dailySpending: {}
+  };
+
+  if(data.balance < 0 || data.income < 0 || data.expense < 0 || data.investment < 0 || data.loan < 0 || data.goalTarget < 0 || data.goalSaved < 0) {
+    showToast('❌ Amounts cannot be negative');
+    return;
+  }
+
   sessionStorage.removeItem('finorbit_signup_otp');
+  localStorage.setItem(storageKey(otpData.email), JSON.stringify(data));
+
   closeModal('signup');
-  doEnterDashboard(otpData.name, otpData.email, true);
+  doEnterDashboard(otpData.name, otpData.email, false);
+  showToast('✅ Account created and financial details saved!');
 }
+
 async function sendLoginCode() {
   const email = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
 
@@ -1602,55 +1648,29 @@ function doLogin() {
   sendLoginCode();
 }
 
-function showDashboardNow(name, email) {
-  currentUserEmail = email;
-  document.getElementById('userName').textContent = name;
-  document.getElementById('userEmail').textContent = email;
-  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('dashboard').classList.add('active');
-}
-
-function showSetupPage(name, email) {
-  currentUserEmail = email;
-  document.getElementById('userName').textContent = name;
-  document.getElementById('userEmail').textContent = email;
-  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('setupScreen').classList.add('active');
-  showToast('Please fill your financial details first.');
-}
-
 function doEnterDashboard(name, email, forceSetup = false) {
+  currentUserEmail = email;
+  document.getElementById('userName').textContent = name;
+  document.getElementById('userEmail').textContent = email;
+  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('landing').classList.remove('active');
+  document.getElementById('dashboard').classList.add('active');
+
   const saved = getSavedProfile(email);
 
+  // For a newly created account, always show the setup/details page first.
+  // For login, show it only if no saved dashboard data exists for that email.
   if (forceSetup || !saved) {
-    showSetupPage(name, email);
+    setTimeout(() => {
+      openModal('setup');
+      showToast('Please fill your bank, monthly expenses, investments and goals first.');
+    }, 150);
     return;
   }
 
-  showDashboardNow(name, email);
   applyFinancialData(saved);
   showToast('Welcome back, ' + name.split(' ')[0] + '! 🎉');
 }
-
-  function openSetupEditor() {
-    const data = getSavedProfile(currentUserEmail) || {};
-    if (document.getElementById('setupBalance')) {
-      document.getElementById('setupBank').value = data.bank || 'State Bank of India';
-      document.getElementById('setupAccountType').value = data.accountType || 'Savings Account';
-      document.getElementById('setupBalance').value = data.balance || '';
-      document.getElementById('setupIncome').value = data.income || '';
-      document.getElementById('setupExpense').value = data.expense || '';
-      document.getElementById('setupInvestment').value = data.investment || '';
-      document.getElementById('setupLoan').value = data.loan || '';
-      document.getElementById('setupGoalTarget').value = data.goalTarget || '';
-      document.getElementById('setupGoalSaved').value = data.goalSaved || '';
-      document.getElementById('setupLast4').value = data.last4 || '';
-    }
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('setupScreen').classList.add('active');
-  }
 
   function saveSetup() {
     const data = {
@@ -1679,9 +1699,8 @@ function doEnterDashboard(name, email, forceSetup = false) {
     }
 
     localStorage.setItem(storageKey(currentUserEmail), JSON.stringify(data));
-    const displayName = document.getElementById('userName').textContent || 'User';
-    showDashboardNow(displayName, currentUserEmail);
     applyFinancialData(data);
+    closeModal('setup');
     showToast('✅ Your financial dashboard is ready!');
   }
 

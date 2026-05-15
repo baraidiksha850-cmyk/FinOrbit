@@ -1372,7 +1372,7 @@ emailjs.init({
 
   function googleSignUp() {
     closeModal('signup'); closeModal('login');
-    doEnterDashboard('Google User', 'user@gmail.com');
+    doEnterDashboard('Google User', 'user@gmail.com', true);
   }
 
   function doSignup() {
@@ -1380,7 +1380,7 @@ emailjs.init({
     const email = document.getElementById('signupEmail').value || 'user@gmail.com';
     if(!email.includes('@')) { showToast('❌ Enter a valid Gmail address'); return; }
     closeModal('signup');
-    doEnterDashboard(name, email);
+    doEnterDashboard(name, email, true);
   }
 
   function generateOtp() {
@@ -1484,7 +1484,7 @@ function verifySignupCode() {
 
   sessionStorage.removeItem('finorbit_signup_otp');
   closeModal('signup');
-  doEnterDashboard(otpData.name, otpData.email);
+  doEnterDashboard(otpData.name, otpData.email, true);
 }
 async function sendLoginCode() {
   const email = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
@@ -1569,7 +1569,7 @@ function doLogin() {
   sendLoginCode();
 }
 
-function doEnterDashboard(name, email) {
+function doEnterDashboard(name, email, forceSetup = false) {
   currentUserEmail = email;
   document.getElementById('userName').textContent = name;
   document.getElementById('userEmail').textContent = email;
@@ -1578,13 +1578,19 @@ function doEnterDashboard(name, email) {
   document.getElementById('dashboard').classList.add('active');
 
   const saved = getSavedProfile(email);
-  if (saved) {
-    applyFinancialData(saved);
-    showToast('Welcome back, ' + name.split(' ')[0] + '! 🎉');
-  } else {
-    openModal('setup');
-    showToast('Please set your bank and amounts first.');
+
+  // For a newly created account, always show the setup/details page first.
+  // For login, show it only if no saved dashboard data exists for that email.
+  if (forceSetup || !saved) {
+    setTimeout(() => {
+      openModal('setup');
+      showToast('Please fill your bank, monthly expenses, investments and goals first.');
+    }, 150);
+    return;
   }
+
+  applyFinancialData(saved);
+  showToast('Welcome back, ' + name.split(' ')[0] + '! 🎉');
 }
 
   function saveSetup() {

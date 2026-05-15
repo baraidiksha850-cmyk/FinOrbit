@@ -913,6 +913,8 @@ emailjs.init({
     <div class="form-group"><label>Gmail Address</label><input type="email" id="signupEmail" placeholder="rahul@gmail.com"></div>
     <div class="form-group"><label>Password</label><input type="password" id="signupPass" placeholder="Min 8 characters"></div>
     <div class="form-group"><label>Monthly Income (₹)</label><input type="number" id="signupIncome" placeholder="50000"></div>
+
+    <button class="full-btn" id="sendSignupOtpBtn" onclick="sendSignupCode()">Send Verification Code →</button>
     
     <div id="signupOtpArea" style="display:none;margin-top:16px">
 
@@ -1393,11 +1395,22 @@ emailjs.init({
   }
 
   async function sendSignupCode() {
-  const name = document.getElementById('signupName').value || 'User';
+  const name = (document.getElementById('signupName').value || 'User').trim();
   const email = (document.getElementById('signupEmail').value || '').trim().toLowerCase();
+  const password = (document.getElementById('signupPass').value || '').trim();
+
+  if (!name) {
+    showToast('❌ Please enter your full name');
+    return;
+  }
 
   if (!email.includes('@')) {
     showToast('❌ Enter a valid email address');
+    return;
+  }
+
+  if (password.length < 6) {
+    showToast('❌ Password must be at least 6 characters');
     return;
   }
 
@@ -1406,6 +1419,7 @@ emailjs.init({
   const otpData = {
     name,
     email,
+    password,
     code,
     expiresAt: Date.now() + (5 * 60 * 1000)
   };
@@ -1430,32 +1444,25 @@ emailjs.init({
 
     showToast('✅ Verification code sent to ' + email);
 
-  }  catch (error) {
-
-  console.error("Login EmailJS error:", error);
-
-  alert(
-    "Login EmailJS error:\n\n" +
-    JSON.stringify(error, null, 2)
-  );
-
-  showToast(
-    "❌ " +
-    (
-      error?.text ||
-      error?.message ||
-      "EmailJS failed"
-    )
-  );
-
-} finally {
-
-  sendBtn.disabled = false;
-  sendBtn.textContent = 'Send Verification Code →';
-
-}
+  } catch (error) {
+    console.error("Signup EmailJS error:", error);
+    alert(
+      "Signup EmailJS error:\\n\\n" +
+      JSON.stringify(error, null, 2)
+    );
+    showToast(
+      "❌ " +
+      (
+        error?.text ||
+        error?.message ||
+        "EmailJS failed. Check EmailJS template To Email = {{to_email}}"
+      )
+    );
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send Verification Code →';
   }
-
+}
 
 function verifySignupCode() {
   const enteredCode = (document.getElementById('signupOtp').value || '').trim();
@@ -1477,10 +1484,18 @@ function verifySignupCode() {
     return;
   }
 
+  localStorage.setItem('finorbit_registered_user', JSON.stringify({
+    name: otpData.name,
+    email: otpData.email,
+    password: otpData.password
+  }));
+
   sessionStorage.removeItem('finorbit_signup_otp');
   closeModal('signup');
   doEnterDashboard(otpData.name, otpData.email);
+  showToast('✅ Account created successfully');
 }
+
 async function sendLoginCode() {
   const email = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
 
@@ -1489,8 +1504,12 @@ async function sendLoginCode() {
     return;
   }
 
+  const registeredUser = JSON.parse(localStorage.getItem('finorbit_registered_user') || 'null');
+  const name = registeredUser && registeredUser.email === email
+    ? registeredUser.name
+    : email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
   const code = generateOtp();
-  const name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   const otpData = {
     email,
@@ -1514,42 +1533,62 @@ async function sendLoginCode() {
       code: code
     });
 
-    document.getElementById('otpDemoNote').style.display = 'none';
+    const note = document.getElementById('otpDemoNote');
+    if (note) note.style.display = 'none';
+
     document.getElementById('loginOtp').value = '';
     document.getElementById('otpArea').style.display = 'block';
 
     showToast('✅ Verification code sent to ' + email);
 
-  }  catch (error) {
-  console.error("Signup EmailJS error:", error);
-  alert("EmailJS Error: " + JSON.stringify(error));
-  showToastalert("REAL ERROR: " + JSON.stringify(error));
+  } catch (error) {
+    console.error("Login EmailJS error:", error);
+    alert(
+      "Login EmailJS error:\\n\\n" +
+      JSON.stringify(error, null, 2)
+    );
+    showToast(
+      "❌ " +
+      (
+        error?.text ||
+        error?.message ||
+        "EmailJS failed. Check EmailJS template To Email = {{to_email}}"
+      )
+    );
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send Verification Code →';
+  }
 }
 
-  function verifyLoginCode() {
-    const enteredCode = (document.getElementById('loginOtp').value || '').trim();
-    const otpData = JSON.parse(sessionStorage.getItem('finorbit_pending_otp') || 'null');
+function verifyLoginCode() {
+  const enteredCode = (document.getElementById('loginOtp').value || '').trim();
+  const otpData = JSON.parse(sessionStorage.getItem('finorbit_pending_otp') || 'null');
 
-    if(!otpData) { showToast('❌ Please request a verification code first.'); return; }
-    if(Date.now() > otpData.expiresAt) {
-      sessionStorage.removeItem('finorbit_pending_otp');
-      showToast('❌ Code expired. Please resend code.');
-      return;
-    }
-    if(enteredCode !== otpData.code) {
-      showToast('❌ Invalid verification code.');
-      return;
-    }
+  if (!otpData) {
+    showToast('❌ Please request a verification code first.');
+    return;
+  }
 
+  if (Date.now() > otpData.expiresAt) {
     sessionStorage.removeItem('finorbit_pending_otp');
-    closeModal('login');
-    doEnterDashboard(otpData.name, otpData.email);
+    showToast('❌ Code expired. Please resend code.');
+    return;
   }
 
-  // Keeping old function name in case any old button still calls it
-  function doLogin() {
-    sendLoginCode();
+  if (enteredCode !== otpData.code) {
+    showToast('❌ Invalid verification code.');
+    return;
   }
+
+  sessionStorage.removeItem('finorbit_pending_otp');
+  closeModal('login');
+  doEnterDashboard(otpData.name, otpData.email);
+}
+
+function doLogin() {
+  sendLoginCode();
+}
 
   function doEnterDashboard(name, email) {
     currentUserEmail = email;
